@@ -75,7 +75,7 @@ class GCode {
 
         void begin(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, Tool *t)
         {
-            _positioning = ABSOLUTE;
+            _positioning = RELATIVE;
             _units_to_mm = 1.0;
             _stream = s;
             _tool = t;

@@ -25,6 +25,7 @@
 #include "Axis_X.h"
 #include "Axis_Y.h"
 #include "Axis_Z.h"
+#include "Axis_E.h"
 
 #include "InkTool.h"
 
@@ -40,14 +41,14 @@ InkTool toolInk;
 Axis_X axisX;
 Axis_Y axisY;
 Axis_Z axisZ;
-Axis axisE;
+Axis_E axisE;
 
 Axis *axis[AXIS_MAX];
 
 void setup()
 {
     Serial.begin(115200);
-    AFMS.begin();
+    AFMS.begin(1000);
     toolInk.begin();
     SD.begin(SD_CS);
     tft.initR(TFT_INITR);

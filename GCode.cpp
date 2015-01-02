@@ -57,13 +57,16 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         float *fptr;
         int *iptr;
     } data;
-    int ipart = 0, fpart = 0, fbase = 0;
+    int i, ipart = 0, fpart = 0, fbase = 0;
     int neg = 1;
-    static float axis[AXIS_MAX];
     static struct gcode_block state;
+    float axis[AXIS_MAX];
 
     data.fptr = NULL;
     state.code = state.cmd = 0;
+
+    for (i = 0; i < AXIS_MAX; i++)
+        axis[i] = (_positioning == RELATIVE) ? 0 : state.axis[i];
 
     for (cp = line->buff; *cp; cp++) {
         if (*cp == ';')
@@ -221,7 +224,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         state.buffered = false;
     }
 
-    for (int i = 0; i < AXIS_MAX; i++)
+    for (i = 0; i < AXIS_MAX; i++)
         state.axis[i] = axis[i] * _units_to_mm * _axis[i]->mm_to_position();
 
     state.next = blk->next;
@@ -244,6 +247,7 @@ void GCode::_block_do(struct gcode_block *blk)
             Serial.print("// G0 X:");Serial.print(blk->axis[AXIS_X]);
             Serial.print(" Y:");Serial.print(blk->axis[AXIS_Y]);
             Serial.print(" Z:");Serial.print(blk->axis[AXIS_Z]);
+            Serial.print(" E:");Serial.print(blk->axis[AXIS_E]);
             for (int i = 0; i < AXIS_MAX; i++) {
                 switch (_positioning) {
                 case ABSOLUTE: _axis[i]->target_set(blk->axis[i]); break;
@@ -253,6 +257,7 @@ void GCode::_block_do(struct gcode_block *blk)
             Serial.print(" C: X:");Serial.print(_axis[AXIS_X]->target_get());
             Serial.print(" Y:");Serial.print(_axis[AXIS_Y]->target_get());
             Serial.print(" Z:");Serial.print(_axis[AXIS_Z]->target_get());
+            Serial.print(" E:");Serial.print(_axis[AXIS_E]->target_get());
             Serial.println();
             break;
         case 20: /* G20 - Set units to inches */

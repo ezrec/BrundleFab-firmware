@@ -33,8 +33,8 @@
 #define XENC_B                  15      /* D15 */
 #define XSTP_MAX                43      /* D43 */
 
-#define YENC_A                  18      /* D19 */
-#define YENC_B                  14      /* D15 */
+#define YENC_A                  18      /* D18 */
+#define YENC_B                  14      /* D14 */
 
 #define ESTP_MIN                16      /* D16 */
 #define ZSTP_MAX                17      /* D16 */

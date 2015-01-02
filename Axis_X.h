@@ -28,7 +28,7 @@
 class Axis_X : public Axis {
     private:
         static const int _overshoot = 10;
-        static const int _adaMotor = 2;
+        static const int _adaMotor = 1;
         static const int _pinEncoderA = XENC_A;
         static const int _pinEncoderB = XENC_B;
         static const int _pinStopMax =  XSTP_MAX;
