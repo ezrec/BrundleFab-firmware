@@ -32,7 +32,7 @@ INKSHIELD_CLASS InkShield(INKSHIELD_PULSE);
 
 Adafruit_MotorShield AFMS;
 
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_RS, TFT_RST);
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 GCode gcode;
 

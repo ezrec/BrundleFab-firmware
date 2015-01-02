@@ -21,17 +21,17 @@
 #define INKSHIELD_PULSE         2       /* D2 */
 #define INKSHIELD_CLASS         InkShieldA0A3
 
-#define TFT_RST                 45      /* D45 */
-#define TFT_RS                  47      /* D47 */
+#define TFT_DC                  45      /* D45 */
+#define TFT_RST                 47      /* D47 */
 #define TFT_CS                  49      /* D49 */
 
-#define TFT_INITR               INITR_GREENTAB
+#define TFT_INITR               INITR_BLACKTAB
 
 #define SD_CS                   53      /* D53 aka SS_PIN */
 
 #define XENC_A                  19      /* D19 */
 #define XENC_B                  15      /* D15 */
-#define XSTP_MAX                22      /* D22 */
+#define XSTP_MAX                43      /* D43 */
 
 #define YENC_A                  18      /* D19 */
 #define YENC_B                  14      /* D15 */

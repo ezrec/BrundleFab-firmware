@@ -24,10 +24,10 @@ D18                                                                     YENC_A
 D19                                                                     XENC_A
 D20     SDA(0x60)                                                       SDA
 D21     SCL                                                             SCL
-D22                                                                     XSTP_MAX
 
-D45                                                     TFT_RST
-D47                                                     TFT_RS
+D43                                                                     XSTP_MAX
+D45                                                     TFT_RST (unused)
+D47                                                     TFT_DC
 D49                                                     TFT_CS
 D50                                                     MISO
 D51                                                     MOSI
