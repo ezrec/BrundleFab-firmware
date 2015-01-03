@@ -292,6 +292,7 @@ void GCode::_block_do(struct gcode_block *blk)
             break;
         case 1: /* M1 - Sleep */
             _mode = MODE_SLEEP;
+            _tool->stop();
             for (int i = 0; i < AXIS_MAX; i++)
                 _axis[i]->motor_disable();
             break;
@@ -325,6 +326,7 @@ void GCode::_block_do(struct gcode_block *blk)
             _stream->print(" FIRMWARE_NAME:BrundleFab");
             break;
         case 124: /* M124 - Immediate motor stop */
+            _tool->stop();
             for (int i = 0; i < AXIS_MAX; i++)
                 _axis[i]->motor_halt();
             break;
