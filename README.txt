@@ -10,8 +10,8 @@ Z axis is the part bin.
 E axis is the powder feed bin.
 
 Tool 0 is the null tool
-Tool 1 is the ink sprayer
-Tool 2 is the heat lamp
+Tools 1..16 are the ink sprayers
+Tool 20 is the heat lamp
 
 GCode
 -----
@@ -42,4 +42,5 @@ T1 Pn Qn Rn Sn			Select ink tool
 				  S: Size (in bytes) of tool pattern
 				The next line immediately following is the
 				Base64 encoded pattern.
-T2				Select heat lamp tool
+T2 .. T16			Additional ink heads
+T20				Select heat lamp tool
