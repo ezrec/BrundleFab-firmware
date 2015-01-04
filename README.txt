@@ -44,3 +44,28 @@ T1 Pn Qn Rn Sn			Select ink tool
 				Base64 encoded pattern.
 T2 .. T16			Additional ink heads
 T20				Select heat lamp tool
+
+Menu Tree
+---------
+
+Left - Back one menu
+Right - Select/Down
+
+0 Monitor
+1 Status
+2 Axis
+
+1.0 X: xxxxx/xxxxx
+1.1 Y: yyyyy/yyyyy
+1.2 Z: zzzzz/zzzzz
+1.3 E: eeeee/eeeee
+1.4 T: n 
+
+2.0 X Axis 
+2.1 Y Axis
+2.2 Z Axis
+2.3 E Axis
+
+2.n.0 Target: xxxx  (up-down selects increment/decrement)
+2.n.1 Position: xxxx
+
