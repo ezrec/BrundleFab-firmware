@@ -239,6 +239,7 @@ void GCode::_block_do(struct gcode_block *blk)
     case 'T':
         _tool->stop();
         _tool->select(blk->cmd);
+        _tool->parm(blk->p, blk->q, blk->r, blk->s);
         _tool->start();
         break;
     case 'G':

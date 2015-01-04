@@ -36,12 +36,10 @@ M115				Get firmware version
 M124				Emergency stop
 T0				Select null tool
 T1 Pn Qn Rn Sn			Select ink tool
-				  P: (x) Width (in or mm) of tool pattern
-				  Q: (y) Length (in or mm) of tool pattern
-				  R: (z) Height (in or mm) of tool pattern
-				  S: Size (in bytes) of tool pattern
-				The next line immediately following is the
-				Base64 encoded pattern.
+				  P: bitmap (bits 23..0) of nozzle
+				  Q: bitmap (bits 47..24) of nozzle
+				  R: bitmap (bits 71..48) of nozzle
+				  S: Spray rate (dots / minute)
 T2 .. T16			Additional ink heads
 T20				Select heat lamp tool
 

@@ -85,16 +85,15 @@ void setup()
 void loop()
 {
     bool motion = false;
-    float pos[AXIS_MAX];
 
     gcode.update();
 
     for (int i = 0; i < AXIS_MAX; i++) {
         motion |= axis[i]->update();
-        pos[i] = axis[i]->position_get() / axis[i]->mm_to_position();
     }
 
-    tools.update(pos);
+    if (motion)
+        tools.update();
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

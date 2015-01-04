@@ -24,7 +24,7 @@
 
 #define MAX_TOOLS       (16 + 1)
 
-class ToolHead {
+class ToolHead : Tool {
     private:
         int _id;
         Tool *_tool;            /* Current tool */
@@ -36,7 +36,6 @@ class ToolHead {
         } _map[MAX_TOOLS];
 
         Tool _tool_null;
-        bool _active;
 
     public:
         ToolHead() :
@@ -106,16 +105,14 @@ class ToolHead {
             return _tool->active();
         }
 
-        virtual void update(const float axis[AXIS_MAX])
+        virtual void update(void)
         {
-            _tool->update(axis);
+            _tool->update();
         }
 
-        virtual void pattern(const float axis[AXIS_MAX],
-                             const float dim[AXIS_MAX],
-                             void *buff, size_t len)
+        virtual void parm(float p, float q = 0.0, float r = 0.0, float s = 0.0)
         {
-            _tool->pattern(axis, dim, buff, len);
+            _tool->parm(p, q, r, s);
         }
 };
 

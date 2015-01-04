@@ -44,13 +44,11 @@ class Tool {
             return _active;
         }
 
-        virtual void update(const float axis[AXIS_MAX])
+        virtual void update(void)
         {
         }
 
-        virtual void pattern(const float axis[AXIS_MAX],
-                             const float dim[AXIS_MAX],
-                             const void *buff, size_t len)
+        virtual void parm(float p, float q = 0.0, float r = 0.0, float s = 0.0)
         {
         }
 };

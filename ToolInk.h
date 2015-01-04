@@ -30,48 +30,19 @@ extern INKSHIELD_CLASS InkShield_Black;
 
 class ToolInk : public Tool {
     private:
-        uint16_t _pattern[INK_PATTERN_SIZE];
-        int _len;
-        float _origin[AXIS_MAX];
-        float _inc[AXIS_MAX];
+        uint16_t _pattern;
     public:
-        virtual void pattern(const float axis[AXIS_MAX],
-                             const float dim[AXIS_MAX],
-                             const void *buff, size_t len)
+        virtual void parm(float p, float q = 0.0, float r = 0.0, float s = 0.0)
         {
-            int i;
-            const uint8_t *byte = (const uint8_t *)buff;
-
-            len >>= 1;
-            if (len > INK_PATTERN_SIZE)
-                len = INK_PATTERN_SIZE;
-            
-            for (i = 0; i < (int)len; i++, byte+=2)
-                _pattern[i] = ((uint16_t)byte[0] << 8) | byte[1];
-
-            for (; i < INK_PATTERN_SIZE; i++)
-                _pattern[i] = 0;
-
-            for (i = 0; i < AXIS_MAX; i++) {
-                _origin[i] = axis[i];
-                _inc[i] = dim[i] / _len;
-            }
-
-            _len = len;
+            _pattern = (uint16_t)(int)p;
         }
 
-        virtual void update(const float axis[AXIS_MAX])
+        virtual void update(void)
         {
-            uint16_t mask;
-            int index;
-
             if (!active())
                 return;
 
-            index = (int)((axis[AXIS_Y] - _origin[AXIS_Y]) * _inc[AXIS_Y]) % _len;
-            mask = _pattern[index];
-            
-            InkShield_Black.spray_ink(mask);
+            InkShield_Black.spray_ink(_pattern);
         }
 };
 
