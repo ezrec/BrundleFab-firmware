@@ -19,7 +19,7 @@
 #define GCODE_H
 
 #include "Axis.h"
-#include "Tool.h"
+#include "ToolHead.h"
 
 #define GCODE_LINE_MAX  128
 #define GCODE_QUEUE_MAX 4
@@ -56,7 +56,7 @@ struct gcode_line {
 class GCode {
     private:
         Axis *_axis[AXIS_MAX];
-        Tool *_tool;
+        ToolHead *_tool;
         Stream *_stream;
 
         struct gcode_line _line;
@@ -73,7 +73,7 @@ class GCode {
         GCode() { }
         ~GCode() { }
 
-        void begin(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, Tool *t)
+        void begin(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t)
         {
             _positioning = RELATIVE;
             _units_to_mm = 1.0;

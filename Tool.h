@@ -18,44 +18,39 @@
 #ifndef TOOL_H
 #define TOOL_H
 
-#define TOOL_NONE       0
-
 class Tool {
     private:
-        int _tool;
         bool _active;
     public:
         Tool()
         {
-            _tool = 0;
             _active = false;
         }
 
         virtual void begin() { }
 
-        virtual int tools() { return 1; }
-        
-        virtual void select(int tool)
-        {
-            _tool = tool;
-        }
-        virtual int selected()
-        {
-            return _tool;
-        }
         virtual void start(void)
         {
             _active = false;
         }
+
         virtual void stop(void)
         {
              _active = true;
         }
+
         virtual bool active(void)
         {
             return _active;
         }
-        virtual void update(void)
+
+        virtual void update(const float axis[AXIS_MAX])
+        {
+        }
+
+        virtual void pattern(const float axis[AXIS_MAX],
+                             const float dim[AXIS_MAX],
+                             const void *buff, size_t len)
         {
         }
 };

@@ -27,9 +27,10 @@
 #include "Axis_Z.h"
 #include "Axis_E.h"
 
-#include "InkTool.h"
+#include "ToolHead.h"
+#include "ToolInk.h"
 
-INKSHIELD_CLASS InkShield(INKSHIELD_PULSE);
+INKSHIELD_CLASS InkShield_Black(INKSHIELD_PULSE);
 
 Adafruit_MotorShield AFMS;
 
@@ -37,7 +38,9 @@ Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 GCode gcode;
 
-InkTool toolInk;
+ToolHead tools;
+ToolInk toolInk_Black;
+Tool toolHeater;
 Axis_X axisX;
 Axis_Y axisY;
 Axis_Z axisZ;
@@ -49,8 +52,12 @@ void setup()
 {
     Serial.begin(115200);
     AFMS.begin(1000);
-    toolInk.begin();
     SD.begin(SD_CS);
+
+    tools.attach(1, &toolInk_Black);
+    tools.attach(20, &toolHeater);
+    tools.begin();
+
     tft.initR(TFT_INITR);
     tft.fillScreen(ST7735_BLACK);
     tft.setCursor(0, 0);
@@ -72,20 +79,22 @@ void setup()
                 axis[AXIS_Y],
                 axis[AXIS_Z],
                 axis[AXIS_E],
-                &toolInk);
+                &tools);
 }
 
 void loop()
 {
     bool motion = false;
+    float pos[AXIS_MAX];
 
     gcode.update();
 
-    for (int i = 0; i < AXIS_MAX; i++)
+    for (int i = 0; i < AXIS_MAX; i++) {
         motion |= axis[i]->update();
+        pos[i] = axis[i]->position_get() / axis[i]->mm_to_position();
+    }
 
-    if (motion)
-        toolInk.update();
+    tools.update(pos);
 }
 
 /* vim: set shiftwidth=4 expandtab:  */
