@@ -96,6 +96,25 @@ class GCode {
                 _axis[i]->motor_disable();
         }
 
+        float axis_position(int axis_id)
+        {
+            if (axis_id < 0 || axis_id > AXIS_MAX)
+                return 0;
+            return _axis[axis_id]->position_get();
+        }
+
+        float axis_target(int axis_id)
+        {
+            if (axis_id < 0 || axis_id > AXIS_MAX)
+                return 0;
+            return _axis[axis_id]->target_get();
+        }
+
+        int tool_selected(void)
+        {
+            return _tool->selected();
+        }
+
         void update();
     private:
         void _block_do(struct gcode_block *blk);

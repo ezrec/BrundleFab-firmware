@@ -29,15 +29,20 @@
 
 #define SD_CS                   53      /* D53 aka SS_PIN */
 
-#define XENC_A                  19      /* D19 */
-#define XENC_B                  15      /* D15 */
-#define XSTP_MAX                43      /* D43 */
+#define X_MOTOR                 3       /* AFMotor M3 */
+#define XENC_A                  18      /* Encoder A */
+#define XENC_B                  29      /* Encoder B */
+#define XSTP_MIN                33      /* Endstop (minimum) */
 
-#define YENC_A                  18      /* D18 */
-#define YENC_B                  14      /* D14 */
+#define Y_MOTOR                 4       /* AFMotor M4 */
+#define YENC_A                  19      /* D18 */
+#define YENC_B                  27      /* D14 */
 
-#define ESTP_MIN                16      /* D16 */
-#define ZSTP_MAX                17      /* D16 */
+#define Z_MOTOR                 2       /* Adafruit_MotorShield M2 */
+#define ZSTP_MAX                37      /* Endstop (Maximim) */
+
+#define E_MOTOR                 1       /* Adafruit_MotorShield M1 */
+#define ESTP_MIN                39      /* Endstop (Minimum) */
 
 #endif /* PINOUT_H */
 /* vim: set shiftwidth=4 expandtab:  */

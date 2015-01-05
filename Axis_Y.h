@@ -28,7 +28,7 @@
 class Axis_Y : public Axis {
     private:
         static const int _overshoot = 10;
-        static const int _adaMotor = 2;
+        static const int _adaMotor = Y_MOTOR;
         static const int _pinEncoderA = YENC_A;
         static const int _pinEncoderB = YENC_B;
 

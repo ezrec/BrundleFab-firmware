@@ -28,10 +28,10 @@
 class Axis_X : public Axis {
     private:
         static const int _overshoot = 10;
-        static const int _adaMotor = 1;
+        static const int _adaMotor = X_MOTOR;
         static const int _pinEncoderA = XENC_A;
         static const int _pinEncoderB = XENC_B;
-        static const int _pinStopMax =  XSTP_MAX;
+        static const int _pinStopMin =  XSTP_MIN;
 
         static const int _pwmMinimum = 98;
         static const int _pwmMaximum = 255;
@@ -68,7 +68,7 @@ class Axis_X : public Axis {
         {
             pinMode(_pinEncoderA, INPUT_PULLUP);
             pinMode(_pinEncoderB, INPUT_PULLUP);
-            pinMode(_pinStopMax, INPUT_PULLUP);
+            pinMode(_pinStopMin, INPUT_PULLUP);
 
             Axis::begin();
         }
@@ -77,7 +77,7 @@ class Axis_X : public Axis {
         {
             mode = HOMING;
             _motor.setSpeed(255);
-            _motor.run(FORWARD);
+            _motor.run(BACKWARD);
         }
 
         virtual const int32_t position_min()
@@ -128,7 +128,7 @@ class Axis_X : public Axis {
                     mode = MOVING;
                 break;
             case HOMING:
-                if (digitalRead(_pinStopMax) == 0) {
+                if (digitalRead(_pinStopMin) == 1) {
                     _homing.timeout = millis()+1;
                     mode = HOMING_QUIESCE;
                 }
@@ -138,7 +138,7 @@ class Axis_X : public Axis {
                     mode = HOMING_BACKOFF;
                     _motor.run(RELEASE);
                     _motor.setSpeed(_pwmMinimum);
-                    _motor.run(BACKWARD);
+                    _motor.run(FORWARD);
                     _homing.timeout = millis()+10;
                     _homing.speed = _pwmMinimum;
                     mode = HOMING_BACKOFF;
@@ -146,14 +146,14 @@ class Axis_X : public Axis {
                 break;
             case HOMING_BACKOFF:
                 if (millis() >= _homing.timeout) {
-                    if (digitalRead(_pinStopMax) == 0) {
+                    if (digitalRead(_pinStopMin) == 1) {
                         if (_homing.speed < _pwmMaximum)
                             _homing.speed++;
                         _motor.setSpeed(_homing.speed);
                         _homing.timeout = millis()+10;
                     } else {
                         motor_halt();
-                        position_set(_maxPos);
+                        position_set(_minPos);
                         target_set(0);
                         mode = IDLE;
                     }
@@ -161,9 +161,11 @@ class Axis_X : public Axis {
                 break;
             case MOVING:
             case MOVING_OVERSHOOT:
-                if (digitalRead(_pinStopMax) == 0) {
-                    if (tar >= pos) {
+                if (digitalRead(_pinStopMin) == 1) {
+                    if (tar <= pos) {
                         mode = IDLE;
+                        position_set(_minPos);
+                        target_set(_minPos);
                         motor_halt();
                         break;
                     }

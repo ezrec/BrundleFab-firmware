@@ -16,8 +16,9 @@
  */
 
 #include <Wire.h>
-#include <Adafruit_ST7735.h>
 #include <SD.h>
+
+#include <Adafruit_ST7735.h>
 
 #include "GCode.h"
 
@@ -29,6 +30,8 @@
 
 #include "ToolHead.h"
 #include "ToolInk.h"
+
+//#include "MenuGFX.h"
 
 INKSHIELD_CLASS InkShield_Black(INKSHIELD_PULSE);
 

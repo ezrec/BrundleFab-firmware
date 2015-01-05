@@ -143,7 +143,7 @@ class Axis_AFStepper : public Axis {
                     _mode = IDLE;
                     break;
                 }
-                if (digitalRead(_homing.pin) == 0) {
+                if (digitalRead(_homing.pin) == 1) {
                     _homing.timeout = millis()+1;
                     _mode = HOMING_QUIESCE;
                 } else {
@@ -159,7 +159,7 @@ class Axis_AFStepper : public Axis {
                 break;
             case HOMING_BACKOFF:
                 if (millis() >= _homing.timeout) {
-                    if (digitalRead(_homing.pin) == 0) {
+                    if (digitalRead(_homing.pin) == 1) {
                         _motor->step(_homing.steps, (_homing.dir == FORWARD) ? BACKWARD : FORWARD, SINGLE);
                         _homing.timeout = millis()+10;
                     } else {
@@ -172,7 +172,7 @@ class Axis_AFStepper : public Axis {
                 break;
             case MOVING:
                 if (tar >= pos && _pinStopMax >= 0) {
-                    if (digitalRead(_pinStopMax) == 0) {
+                    if (digitalRead(_pinStopMax) == 1) {
                         Serial.println("ENDSTOP: Max\n");
                         _mode = IDLE;
                         target_set(_maxPos);
@@ -182,7 +182,7 @@ class Axis_AFStepper : public Axis {
                 }
 
                 if (tar <= pos && _pinStopMin >= 0) {
-                    if (digitalRead(_pinStopMin) == 0) {
+                    if (digitalRead(_pinStopMin) == 1) {
                         Serial.println("ENDSTOP: Min\n");
                         _mode = IDLE;
                         target_set(_minPos);

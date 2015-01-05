@@ -21,12 +21,8 @@
 #include "Axis_AFStepper.h"
 
 class Axis_E : public Axis_AFStepper {
-    private:
-        static const int _adaMotor = 2; /* 1 = M1/M2, 2 = M3/M4 */
-        static const int _pinStopMin = ESTP_MIN;
-
     public:
-        Axis_E() : Axis_AFStepper(2, ESTP_MIN, -1)
+        Axis_E() : Axis_AFStepper(1, ESTP_MIN, -1)
         {
         }
 };
