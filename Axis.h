@@ -18,6 +18,8 @@
 #ifndef AXIS_H
 #define AXIS_H
 
+#include <math.h>
+
 #define AXIS_MAX        4
 #define AXIS_X          0
 #define AXIS_Y          1
@@ -26,7 +28,7 @@
 
 class Axis {
   private:
-    int32_t _target;
+    int32_t _target, _velocity;
     bool _enabled, _valid;
 
   public:
@@ -46,18 +48,25 @@ class Axis {
     virtual bool motor_active() { return false; }
     virtual void motor_halt() { _target = position_get(); }
 
-    virtual void target_set(int32_t pos)
+    /* Velocity is in position units / minute */
+    virtual void velocity_set(int32_t vel) { _velocity = vel; }
+    virtual int32_t velocity_get() { return _velocity; }
+
+    virtual void target_set(int32_t pos, float time_min = 0.0)
     {
         if (pos < position_min())
             pos = position_min();
         else if (pos > position_max())
             pos = position_max();
 
+        if (time_min > 0.0)
+            velocity_set(fabsf((pos - _target) / time_min));
+
         _target = pos;
     }
-    virtual inline void target_move(int32_t pos)
+    virtual inline void target_move(int32_t pos, float time_min = 0.0)
     {
-        target_set(target_get() + pos);
+        target_set(target_get() + pos, time_min);
     }
     virtual int32_t target_get(void) { return _target; }
 

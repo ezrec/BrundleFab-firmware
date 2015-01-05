@@ -181,6 +181,9 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
             mode = FLOAT;
             data.fptr = &axis[AXIS_E];
             break;
+        case 'F':
+            mode = FLOAT;
+            data.fptr = &state.f;
         default:
             mode = INVALID;
             break;
@@ -235,6 +238,8 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 
 void GCode::_block_do(struct gcode_block *blk)
 {
+    float dist, time;
+
     switch (blk->code) {
     case 'T':
         _tool->stop();
@@ -245,14 +250,34 @@ void GCode::_block_do(struct gcode_block *blk)
     case 'G':
         switch (blk->cmd) {
         case 0: /* G0 - Uncontrolled move */
+        case 1: /* G1 - Controlled move */
             Serial.print("// G0 X:");Serial.print(blk->axis[AXIS_X]);
             Serial.print(" Y:");Serial.print(blk->axis[AXIS_Y]);
             Serial.print(" Z:");Serial.print(blk->axis[AXIS_Z]);
             Serial.print(" E:");Serial.print(blk->axis[AXIS_E]);
+            Serial.print(" F:");Serial.print(blk->f);
+
+            dist = 0.0;
+            for (int i = 0; i < AXIS_MAX; i++) {
+                float delta;
+                int32_t pdelta = blk->axis[i];
+
+                switch (_positioning) {
+                case ABSOLUTE: pdelta -= _axis[i]->target_get();
+                case RELATIVE: break;
+                }
+
+                delta = pdelta /  _axis[i]->mm_to_position();
+                dist  += delta * delta;
+            }
+
+            time = sqrt(dist) / blk->f;
+            Serial.print(" t:");Serial.print(time);
+
             for (int i = 0; i < AXIS_MAX; i++) {
                 switch (_positioning) {
-                case ABSOLUTE: _axis[i]->target_set(blk->axis[i]); break;
-                case RELATIVE: _axis[i]->target_move(blk->axis[i]); break;
+                case ABSOLUTE: _axis[i]->target_set(blk->axis[i], time); break;
+                case RELATIVE: _axis[i]->target_move(blk->axis[i], time); break;
                 }
             }
             Serial.print(" C: X:");Serial.print(_axis[AXIS_X]->target_get());
