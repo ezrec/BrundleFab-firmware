@@ -36,8 +36,8 @@ class Axis_X : public Axis {
         static const int _pwmMinimum = 98;
         static const int _pwmMaximum = 255;
 
-        static const int _maxPos = 7100;
-        static const int _minPos = -4400;
+        static const int _minPos = 0;
+        static const int _maxPos = 11500;
 
        float _mm_to_position;
 
@@ -50,6 +50,7 @@ class Axis_X : public Axis {
             MOVING, MOVING_OVERSHOOT,
         } mode;
         struct {
+            int32_t target;
             unsigned long timeout;
             int speed;
         } _homing;
@@ -64,18 +65,21 @@ class Axis_X : public Axis {
         {
                 _mm_to_position = (float)(_maxPos - _minPos)/(float)(870 - 130);
         }
+
         virtual void begin()
         {
             pinMode(_pinEncoderA, INPUT_PULLUP);
             pinMode(_pinEncoderB, INPUT_PULLUP);
             pinMode(_pinStopMin, INPUT_PULLUP);
 
+            _encoder.write(0);
             Axis::begin();
         }
 
-        virtual void home()
+        virtual void home(int32_t pos)
         {
             mode = HOMING;
+            _homing.target = pos;
             _motor.setSpeed(255);
             _motor.run(BACKWARD);
         }
@@ -107,11 +111,6 @@ class Axis_X : public Axis {
             Axis::motor_halt();
         }
 
-        virtual void position_set(int32_t pos)
-        {
-            _encoder.write(pos);
-        }
-
         virtual int32_t position_get(void)
         {
             return _encoder.read();
@@ -121,6 +120,12 @@ class Axis_X : public Axis {
         {
             int32_t pos = position_get();
             int32_t tar = target_get();
+
+            if (tar >= position_max())
+                tar = position_max() - 1;
+
+            if (tar < position_min())
+                tar = position_min();
 
             switch (mode) {
             case IDLE:
@@ -153,9 +158,9 @@ class Axis_X : public Axis {
                         _homing.timeout = millis()+10;
                     } else {
                         motor_halt();
-                        position_set(_minPos);
-                        target_set(0);
+                        _encoder.write(_minPos);
                         mode = IDLE;
+                        Axis::home(_homing.target);
                     }
                 }
                 break;
@@ -164,8 +169,7 @@ class Axis_X : public Axis {
                 if (digitalRead(_pinStopMin) == 1) {
                     if (tar <= pos) {
                         mode = IDLE;
-                        position_set(_minPos);
-                        target_set(_minPos);
+                        _encoder.write(_minPos);
                         motor_halt();
                         break;
                     }

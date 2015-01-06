@@ -33,8 +33,6 @@
 
 //#include "MenuGFX.h"
 
-INKSHIELD_CLASS InkShield_Black(INKSHIELD_PULSE);
-
 Adafruit_MotorShield AFMS;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);

@@ -52,6 +52,7 @@ class Axis_AFStepper : public Axis {
             int32_t steps;
             int dir;
             int pin;
+            int32_t target;
         } _homing;
         struct {
             unsigned long timeout;
@@ -66,7 +67,7 @@ class Axis_AFStepper : public Axis {
             _pinStopMin = pinStopMin;
             _pinStopMax = pinStopMax;
 
-            position_set((_minPos + _maxPos) / 2);
+            _position = 0;
             if (_pinStopMin >= 0) {
                 _homing.dir = BACKWARD;
                 _homing.pin = _pinStopMin;
@@ -89,9 +90,10 @@ class Axis_AFStepper : public Axis {
             Axis::begin();
         }
 
-        virtual void home()
+        virtual void home(int32_t position)
         {
             _homing.steps = 1;
+            _homing.target = position;
             _mode = HOMING;
         }
 
@@ -115,12 +117,6 @@ class Axis_AFStepper : public Axis {
             Axis::motor_disable();
         }
 
-        virtual void position_set(int32_t pos)
-        {
-            _position = pos;
-            Axis::position_set(pos);
-        }
-
         virtual int32_t position_get(void)
         {
             return _position;
@@ -131,6 +127,12 @@ class Axis_AFStepper : public Axis {
             int32_t pos = position_get();
             int32_t tar = target_get();
 
+            if (tar >= position_max())
+                tar = position_max() - 1;
+
+            if (tar < position_min())
+                tar = position_min();
+
             switch (_mode) {
             case IDLE:
                 if (tar != pos)
@@ -138,16 +140,15 @@ class Axis_AFStepper : public Axis {
                 break;
             case HOMING:
                 if (_homing.dir == BRAKE) {
-                    position_set(0);
-                    target_set(0);
                     _mode = IDLE;
+                    Axis::home(_homing.target);
                     break;
                 }
                 if (digitalRead(_homing.pin) == 1) {
                     _homing.timeout = millis()+1;
                     _mode = HOMING_QUIESCE;
                 } else {
-                    _motor->step(_homing.steps, _homing.dir, SINGLE);
+                    _motor->step(_homing.steps, _homing.dir, DOUBLE);
                 }
                 break;
             case HOMING_QUIESCE:
@@ -164,18 +165,16 @@ class Axis_AFStepper : public Axis {
                         _homing.timeout = millis()+10;
                     } else {
                         motor_halt();
-                        position_set((_homing.dir == FORWARD) ? _maxPos : _minPos);
-                        target_set(0);
+                        _position = (_homing.dir == FORWARD) ? _maxPos : _minPos;
                         _mode = IDLE;
+                        Axis::home(_homing.target);
                     }
                 }
                 break;
             case MOVING:
                 if (tar >= pos && _pinStopMax >= 0) {
                     if (digitalRead(_pinStopMax) == 1) {
-                        Serial.println("ENDSTOP: Max\n");
                         _mode = IDLE;
-                        target_set(_maxPos);
                         motor_halt();
                         break;
                     }
@@ -183,9 +182,7 @@ class Axis_AFStepper : public Axis {
 
                 if (tar <= pos && _pinStopMin >= 0) {
                     if (digitalRead(_pinStopMin) == 1) {
-                        Serial.println("ENDSTOP: Min\n");
                         _mode = IDLE;
-                        target_set(_minPos);
                         motor_halt();
                         break;
                     }

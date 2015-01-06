@@ -32,13 +32,21 @@ class Axis {
     bool _enabled, _valid;
 
   public:
-    Axis() { _enabled = false; _valid = false; _target = 0; }
+    Axis() { _enabled = false; _valid = false; _target = 0; _velocity = 0; }
     ~Axis() {}
 
     virtual const float mm_to_position() { return 1.0; }
 
-    virtual void begin() { motor_disable(); }
-    virtual void home() { position_set(0); }
+    virtual void begin()
+    {
+        motor_disable();
+    }
+
+    virtual void home(int32_t pos = 0)
+    {
+      _valid = true;
+      target_set(pos);
+    }
     virtual bool update() { return false; }
 
     virtual void motor_enable() { _enabled = true; }
@@ -46,7 +54,7 @@ class Axis {
     virtual bool motor_enabled() { return _enabled; }
 
     virtual bool motor_active() { return false; }
-    virtual void motor_halt() { _target = position_get(); }
+    virtual void motor_halt() { }
 
     /* Velocity is in position units / minute */
     virtual void velocity_set(int32_t vel) { _velocity = vel; }
@@ -54,19 +62,10 @@ class Axis {
 
     virtual void target_set(int32_t pos, float time_min = 0.0)
     {
-        if (pos < position_min())
-            pos = position_min();
-        else if (pos > position_max())
-            pos = position_max();
-
         if (time_min > 0.0)
             velocity_set(fabsf((pos - _target) / time_min));
 
         _target = pos;
-    }
-    virtual inline void target_move(int32_t pos, float time_min = 0.0)
-    {
-        target_set(target_get() + pos, time_min);
     }
     virtual int32_t target_get(void) { return _target; }
 
@@ -75,10 +74,30 @@ class Axis {
 
     virtual bool position_valid() { return _valid; } 
     virtual int32_t position_get() { return 0; }
-    virtual void position_set(int32_t position)
+
+    virtual inline void home_mm(float pos_mm)
     {
-      _target = position;
-      _valid = true;
+        return home(pos_mm * mm_to_position());
+    }
+    virtual inline float target_get_mm()
+    {
+        return target_get() / mm_to_position();
+    }
+    virtual inline void target_set_mm(float pos_mm, float time_min = 0.0)
+    {
+        target_set(pos_mm * mm_to_position(), time_min);
+    }
+    virtual inline void target_move(int32_t pos, float time_min = 0.0)
+    {
+        target_set(target_get() + pos, time_min);
+    }
+    virtual inline void target_move_mm(float pos_mm, float time_min = 0.0)
+    {
+        target_move(pos_mm * mm_to_position(), time_min);
+    }
+    virtual inline float position_get_mm()
+    {
+        return position_get() / mm_to_position();
     }
 };
 

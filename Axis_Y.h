@@ -51,6 +51,7 @@ class Axis_Y : public Axis {
         struct {
             unsigned long timeout;
             int32_t position;
+            int32_t target;
         } _homing;
         struct {
             unsigned long timeout;
@@ -68,12 +69,14 @@ class Axis_Y : public Axis {
             pinMode(_pinEncoderA, INPUT_PULLUP);
             pinMode(_pinEncoderB, INPUT_PULLUP);
 
+            _encoder.write(0);
             Axis::begin();
         }
 
-        virtual void home()
+        virtual void home(int32_t position)
         {
             mode = HOMING;
+            _homing.target = position;
             _motor.setSpeed(_pwmMaximum);
             _motor.run(BACKWARD);
         }
@@ -105,11 +108,6 @@ class Axis_Y : public Axis {
             Axis::motor_halt();
         }
 
-        virtual void position_set(int32_t pos)
-        {
-            _encoder.write(pos);
-        }
-
         virtual int32_t position_get(void)
         {
             return _encoder.read();
@@ -119,6 +117,12 @@ class Axis_Y : public Axis {
         {
             int32_t pos = position_get();
             int32_t tar = target_get();
+
+            if (tar >= position_max())
+                tar = position_max() - 1;
+
+            if (tar < position_min())
+                tar = position_min();
 
             switch (mode) {
             case IDLE:
@@ -144,8 +148,8 @@ class Axis_Y : public Axis {
                 break;
             case HOMING_BACKOFF:
                 if (millis() >= _homing.timeout) {
-                    position_set(_minPos);
-                    target_set(0);
+                    _encoder.write(_minPos);
+                    Axis::home(_homing.target);
                     mode = IDLE;
                 }
              case MOVING:

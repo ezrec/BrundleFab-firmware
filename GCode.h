@@ -29,6 +29,16 @@ struct gcode_parameter {
     float value;
 };
 
+#define GCODE_UPDATE_AXIS(x)    (1 << (x))
+#define GCODE_UPDATE_F          (1 << (AXIS_MAX + 0))
+#define GCODE_UPDATE_I          (1 << (AXIS_MAX + 1))
+#define GCODE_UPDATE_J          (1 << (AXIS_MAX + 2))
+#define GCODE_UPDATE_K          (1 << (AXIS_MAX + 3))
+#define GCODE_UPDATE_P          (1 << (AXIS_MAX + 4))
+#define GCODE_UPDATE_Q          (1 << (AXIS_MAX + 5))
+#define GCODE_UPDATE_R          (1 << (AXIS_MAX + 6))
+#define GCODE_UPDATE_S          (1 << (AXIS_MAX + 7))
+
 struct gcode_block {
     struct gcode_block *next;
 
@@ -36,11 +46,12 @@ struct gcode_block {
     char code;
     int  cmd;
     int  num;
-    int32_t axis[AXIS_MAX];
+    uint16_t update_mask;
+    float axis[AXIS_MAX];
+    float f;        /* feed rate */
     float i;        /* x center of arc */
     float j;        /* y center of arc */
     float k;        /* z center of arc */
-    float f;        /* feed rate */
     float p;        /* parameter */
     float q;        /* parameter */
     float r;        /* parameter */
@@ -58,6 +69,7 @@ class GCode {
         Axis *_axis[AXIS_MAX];
         ToolHead *_tool;
         Stream *_stream;
+        float _offset[AXIS_MAX];
 
         struct gcode_line _line;
         struct {
@@ -75,7 +87,7 @@ class GCode {
 
         void begin(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t)
         {
-            _positioning = RELATIVE;
+            _positioning = ABSOLUTE;
             _units_to_mm = 1.0;
             _stream = s;
             _tool = t;
@@ -83,6 +95,10 @@ class GCode {
             _axis[AXIS_Y] = y;
             _axis[AXIS_Z] = z;
             _axis[AXIS_E] = e;
+            _offset[AXIS_X] = 0;
+            _offset[AXIS_Y] = 0;
+            _offset[AXIS_Z] = 0;
+            _offset[AXIS_E] = 0;
 
             _stream->println("start");
 

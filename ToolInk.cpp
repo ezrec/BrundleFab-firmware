@@ -15,24 +15,21 @@
  *
  */
 
-#ifndef TOOLINK_H
-#define TOOLINK_H
+#include <InkShieldMega.h>
 
-#include "Tool.h"
+#include "ToolInk.h"
 
 #include "pinout.h"
 
-class ToolInk : public Tool {
-    private:
-        uint16_t _pattern;
-    public:
-        virtual void parm(float p, float q = 0.0, float r = 0.0, float s = 0.0)
-        {
-            _pattern = (uint16_t)(int)p;
-        }
+INKSHIELD_CLASS InkShield_Black(INKSHIELD_PULSE);
 
-        virtual void update(void);
+
+void ToolInk::update(void)
+{
+    if (!active())
+        return;
+
+    InkShield_Black.spray_ink(_pattern);
 };
 
-#endif /* TOOLINK_H */
 /* vim: set shiftwidth=4 expandtab:  */
