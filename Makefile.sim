@@ -1,0 +1,52 @@
+# Copyright (C) 2015, Jason S. McMullan
+# All right reserved.
+# Author: Jason S. McMullan <jason.mcmullan@gmail.com>
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+#
+MKDIR ?= mkdir -p
+
+.SUFFIXES := .cpp .o .ino
+
+all: BrundleFab
+
+clean:
+	rm -rf build-host
+
+CXXFLAGS = -g3 -I. -Isimavr -I/usr/include/SDL
+
+SRCS = simavr/main.cpp \
+       simavr/Arduino.cpp \
+       simavr/WString.cpp \
+       simavr/Print.cpp \
+       simavr/Stream.cpp \
+       simavr/Adafruit_GFX.cpp \
+       GCode.cpp \
+       ToolInk.cpp
+
+OBJS = $(SRCS:%.cpp=build-host/%.o)
+
+build-host/%.cpp: %.ino Makefile.sim
+	$(MKDIR) $(dir $@)
+	echo '#include <Arduino.h>' >$@
+	echo '#include <HardwareSerial.h>' >>$@
+	echo '#include <SD.h>' >$@
+	cat $< >>$@
+
+build-host/%.o: %.cpp
+	$(MKDIR) $(dir $@)
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
+
+%: build-host/%.cpp $(OBJS)
+	$(CXX) -o $@ $^ $(CXXFLAGS) -lSDL
+
+# vim: set shiftwidth=8 noexpandtab:
