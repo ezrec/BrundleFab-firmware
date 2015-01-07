@@ -19,17 +19,45 @@
 
 #include "Arduino.h"
 
+static int digitalPin[54];
+static int analogPin[6];
+
 void pinMode(uint8_t pin, uint8_t mode)
 {
+    if (pin >= 54)
+        return;
+    if (mode == INPUT_PULLUP)
+        digitalPin[pin] = 1;
 }
 
-void digitalWrite(uint8_t pin, uint8_t mode)
+void digitalWrite(uint8_t pin, uint8_t value)
 {
+    if (pin >= 54)
+        return;
+    digitalPin[pin] = value;
 }
 
 int digitalRead(uint8_t pin)
 {
-    return 1;
+    if (pin >= 54)
+        return -1;
+    return digitalPin[pin];
+}
+
+int analogRead(uint8_t pin)
+{
+    if (pin >= 6)
+        return -1;
+
+    return analogPin[pin];
+}
+
+void analogWrite(uint8_t pin, int val)
+{
+    if (pin >= 6)
+        return;
+
+    analogPin[pin] = val;
 }
 
 unsigned long millis(void)

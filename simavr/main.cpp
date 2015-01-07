@@ -25,8 +25,6 @@
 HardwareSerial Serial;
 SDClass SD;
 
-int analogPin[6];
-
 int main(int argc, char **argv)
 {
     bool dead = false;
@@ -42,16 +40,16 @@ int main(int argc, char **argv)
         if (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_KEYDOWN) {
                 switch (ev.key.keysym.sym) {
-                case SDLK_DOWN:  analogPin[4] =  20; break;
-                case SDLK_RIGHT: analogPin[4] = 180; break;
-                case SDLK_RETURN: analogPin[4] = 280; break;
-                case SDLK_UP:    analogPin[4] = 380; break;
-                case SDLK_LEFT:  analogPin[4] = 630; break;
+                case SDLK_DOWN:  analogWrite(4, 20); break;
+                case SDLK_RIGHT: analogWrite(4, 180); break;
+                case SDLK_RETURN: analogWrite(4, 280); break;
+                case SDLK_UP:    analogWrite(4, 380); break;
+                case SDLK_LEFT:  analogWrite(4, 630); break;
 
                 case SDLK_ESCAPE: dead = true; break;
                 }
             } else if (ev.type == SDL_KEYUP) {
-                analogPin[4] = 700;
+                analogWrite(4, 700);
             } else if (ev.type == SDL_QUIT) {
                 dead = true;
             }
