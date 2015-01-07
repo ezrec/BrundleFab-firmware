@@ -18,16 +18,11 @@
 #ifndef AXIS_X_H
 #define AXIS_X_H
 
-#include <Wire.h>
-#include <AFMotor.h>
-#include <Encoder.h>
-
 #include "pinout.h"
-#include "Axis.h"
+#include "Axis_DCEncoder.h"
 
-class Axis_X : public Axis {
+class Axis_X : public Axis_DCEncoder {
     private:
-        static const int _overshoot = 10;
         static const int _adaMotor = X_MOTOR;
         static const int _pinEncoderA = XENC_A;
         static const int _pinEncoderB = XENC_B;
@@ -39,186 +34,15 @@ class Axis_X : public Axis {
         static const int _minPos = 0;
         static const int _maxPos = 11500;
 
-       float _mm_to_position;
-
-        AF_DCMotor _motor;
-        Encoder _encoder;
-
-        enum {
-            IDLE,
-            HOMING, HOMING_QUIESCE, HOMING_BACKOFF,
-            MOVING, MOVING_OVERSHOOT,
-        } mode;
-        struct {
-            int32_t target;
-            unsigned long timeout;
-            int speed;
-        } _homing;
-        struct {
-            unsigned long timeout;
-            int overshoot;
-        } _moving;
+        static const float _mmWidth = 740.0;
 
     public:
-        Axis_X() : Axis(),
-                 _motor(_adaMotor), _encoder(_pinEncoderA, _pinEncoderB)
+        Axis_X() : Axis_DCEncoder(
+                _adaMotor, _pwmMinimum, _pwmMaximum,
+                _pinEncoderA, _pinEncoderB,
+                _pinStopMin, -1,
+                _mmWidth, _minPos, _maxPos)
         {
-                _mm_to_position = (float)(_maxPos - _minPos)/(float)(870 - 130);
-        }
-
-        virtual void begin()
-        {
-            pinMode(_pinEncoderA, INPUT_PULLUP);
-            pinMode(_pinEncoderB, INPUT_PULLUP);
-            pinMode(_pinStopMin, INPUT_PULLUP);
-
-            _encoder.write(0);
-            Axis::begin();
-        }
-
-        virtual void home(int32_t pos)
-        {
-            mode = HOMING;
-            _homing.target = pos;
-            _motor.setSpeed(255);
-            _motor.run(BACKWARD);
-        }
-
-        virtual const int32_t position_min()
-        {
-            return _minPos;
-        }
-
-        virtual const int32_t position_max()
-        {
-            return _maxPos;
-        }
-
-        virtual const float mm_to_position()
-        {
-            return _mm_to_position;
-        }
-
-        virtual void motor_disable()
-        {
-            _motor.run(RELEASE);
-            Axis::motor_disable();
-        }
-
-        virtual void motor_halt()
-        {
-            _motor.setSpeed(0);
-            Axis::motor_halt();
-        }
-
-        virtual int32_t position_get(void)
-        {
-            return _encoder.read();
-        }
-
-        virtual bool update()
-        {
-            int32_t pos = position_get();
-            int32_t tar = target_get();
-
-            if (tar >= position_max())
-                tar = position_max() - 1;
-
-            if (tar < position_min())
-                tar = position_min();
-
-            switch (mode) {
-            case IDLE:
-                if (tar != pos)
-                    mode = MOVING;
-                break;
-            case HOMING:
-                if (digitalRead(_pinStopMin) == 1) {
-                    _homing.timeout = millis()+1;
-                    mode = HOMING_QUIESCE;
-                }
-                break;
-            case HOMING_QUIESCE:
-                if (millis() >= _homing.timeout) {
-                    mode = HOMING_BACKOFF;
-                    _motor.run(RELEASE);
-                    _motor.setSpeed(_pwmMinimum);
-                    _motor.run(FORWARD);
-                    _homing.timeout = millis()+10;
-                    _homing.speed = _pwmMinimum;
-                    mode = HOMING_BACKOFF;
-                }
-                break;
-            case HOMING_BACKOFF:
-                if (millis() >= _homing.timeout) {
-                    if (digitalRead(_pinStopMin) == 1) {
-                        if (_homing.speed < _pwmMaximum)
-                            _homing.speed++;
-                        _motor.setSpeed(_homing.speed);
-                        _homing.timeout = millis()+10;
-                    } else {
-                        motor_halt();
-                        _encoder.write(_minPos);
-                        mode = IDLE;
-                        Axis::home(_homing.target);
-                    }
-                }
-                break;
-            case MOVING:
-            case MOVING_OVERSHOOT:
-                if (digitalRead(_pinStopMin) == 1) {
-                    if (tar <= pos) {
-                        mode = IDLE;
-                        _encoder.write(_minPos);
-                        motor_halt();
-                        break;
-                    }
-                }
-
-                int32_t distance = (pos > tar) ? (pos - tar) : (tar - pos);
-
-                if (distance == 0) {
-                    _motor.run(BRAKE);
-                    _motor.setSpeed(0);
-                    if (mode == MOVING) {
-                        _moving.timeout = millis() + 1;
-                        _moving.overshoot = _overshoot;
-                        mode = MOVING_OVERSHOOT;
-                    } else {
-                        if (millis() < _moving.timeout)
-                            break;
-                        if (_moving.overshoot) {
-                            _moving.overshoot--;
-                            _moving.timeout = millis() + 1;
-                        } else {
-                            mode = IDLE;
-                        }
-                    }
-                    break;
-                }
-
-                int speed;
-
-                if (distance > 50)
-                    speed = _pwmMaximum;
-                else
-                    speed = _pwmMinimum + distance;
-
-                _motor.setSpeed(speed);
-                _motor.run((pos < tar) ? FORWARD : BACKWARD);
-                break;
-                if (millis() > _moving.timeout) {
-                    if (_moving.overshoot) {
-                        _moving.overshoot--;
-                        _motor.run(BRAKE);
-                        _motor.setSpeed(0);
-                        mode = MOVING;
-                    }
-                }
-                break;
-            }
-
-             return (mode == IDLE) ? false : true;
         }
 };
 
