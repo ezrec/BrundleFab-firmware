@@ -24,16 +24,25 @@ G0 Xn Yn Zn En			Uncontrolled move
 G1 Xn Yn Zn En			Controlled move
 G20				Set units to inches
 G21				Set units to mm
-G28				Home all axes
+G28 Xn Yn En			Home selected axes
 G90				Absolute positioning
 G91				Relative positioning
+
 M0				Stop
 M1				Sleep
 M17				Enable motors
 M18				Disable motors
+M23 filename			Select SD file
+M24				Start SD print
+M25				Pause SD print
+M26 Sn				Set position in SD file
+M30 filename			Delete file from SD
+M32 filename			Select SD and and printf
+M36 filename			Resturn file information
 M114				Get current position
 M115				Get firmware version
 M124				Emergency stop
+
 T0				Select null tool
 T1 Pn Qn Rn Sn			Select ink tool
 				  P: bitmap (bits 23..0) of nozzle

@@ -35,12 +35,12 @@ static bool _line_update(struct gcode_line *line, char c)
     if (line->len == 0 &&  isspace(c))
         return false;
 
-    line->buff[line->len++] = c;
-
     if (c == '\n' || c == '\r') {
         line->buff[line->len] = 0;
         return true;
     }
+
+    line->buff[line->len++] = c;
 
     return false;
 }
@@ -52,7 +52,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 {
     char *cp, *is_cs = NULL;
     uint8_t cs = 0;
-    enum { INVALID, INTEGER, FLOAT, FLOAT_FRAC } mode = INVALID;
+    enum { INVALID, INTEGER, FLOAT, FLOAT_FRAC, FILENAME } mode = INVALID;
     union {
         float *fptr;
         int *iptr;
@@ -73,48 +73,79 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         }
 
         cs ^= *cp;
-        if (mode == FLOAT && *cp == '.') {
-            fbase = 1;
-            fpart = 0;
-            mode = FLOAT_FRAC;
-            continue;
-        }
-       
-        if (*cp == '-') {
-            neg *= -1;
-            continue;
-        }
 
-        if (isdigit(*cp)) {
-            if (mode == INTEGER || mode == FLOAT) {
-                ipart *= 10;
-                ipart += *cp - '0';
-            } else if (mode == FLOAT_FRAC) {
-                fpart *= 10;
-                fbase *= 10;
-                fpart += *cp - '0';
+        if (mode == FILENAME) {
+            if (isspace(*cp)) {
+                if (ipart > 0) {
+                    state.filename[ipart] = 0;
+                    mode = INVALID;
+                    ipart = 0;
+                } else
+                    continue;
             }
-            continue;
+            if (ipart < sizeof(state.filename)-1) {
+                state.filename[ipart++] = *cp;
+                continue;
+            }
+        } else {
+            if (mode == FLOAT && *cp == '.') {
+                fbase = 1;
+                fpart = 0;
+                mode = FLOAT_FRAC;
+                continue;
+            }
+           
+            if (*cp == '-') {
+                neg *= -1;
+                continue;
+            }
+
+            if (isdigit(*cp)) {
+                if (mode == INTEGER || mode == FLOAT) {
+                    ipart *= 10;
+                    ipart += *cp - '0';
+                } else if (mode == FLOAT_FRAC) {
+                    fpart *= 10;
+                    fbase *= 10;
+                    fpart += *cp - '0';
+                }
+                continue;
+            }
         }
 
         switch (mode) {
         case INTEGER:
             *data.iptr = neg * ipart;
-            mode = INVALID;
-            ipart = 0;
             break;
         case FLOAT:
             *data.fptr = neg * (float)ipart;
-            mode = INVALID;
-            ipart = 0;
             break;
         case FLOAT_FRAC:
             *data.fptr = neg * (float)ipart + ((float)fpart / (float)fbase);
-            mode = INVALID;
-            ipart = 0;
+            break;
+        case FILENAME:
+            state.filename[ipart] = 0;
             break;
         case INVALID:
             break;
+        }
+
+        mode = INVALID;
+        ipart= 0;
+
+        if (state.code == 'M' && (
+                    state.cmd == 23 ||
+                    state.cmd == 28 ||
+                    state.cmd == 29 ||
+                    state.cmd == 30 ||
+                    state.cmd == 32 ||
+                    state.cmd == 36)) {
+            if (!(state.update_mask & GCODE_UPDATE_FILENAME)) {
+                state.update_mask |= GCODE_UPDATE_FILENAME;
+                mode = FILENAME;
+                ipart = 0;
+                continue;
+            }
         }
                 
         if (isspace(*cp))
@@ -191,6 +222,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
             mode = FLOAT;
             data.fptr = &state.f;
             state.update_mask |= GCODE_UPDATE_F;
+            break;
         default:
             mode = INVALID;
             break;
@@ -204,6 +236,23 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
             *data.fptr = 0.0;
             neg = 1;
         }
+    }
+
+    switch (mode) {
+    case INTEGER:
+        *data.iptr = neg * ipart;
+        break;
+    case FLOAT:
+        *data.fptr = neg * (float)ipart;
+        break;
+    case FLOAT_FRAC:
+        *data.fptr = neg * (float)ipart + ((float)fpart / (float)fbase);
+        break;
+    case FILENAME:
+        state.filename[ipart] = 0;
+        break;
+    case INVALID:
+        break;
     }
 
     if (is_cs) {
@@ -230,6 +279,8 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
              state.cmd == 31 ||  /* G31 - Report Current Probe Status */
              state.cmd == 32)) {  /* G32 - Probe Z and caclulate Z plane */
         state.buffered = true;
+    } else if (state.code == 'T') {
+        state.buffered = true;
     } else {
         state.buffered = false;
     }
@@ -244,12 +295,15 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     state.next = blk->next;
     *blk = state;
 
+    _line_reset(line);
+
     return true;
 }
 
 void GCode::_block_do(struct gcode_block *blk)
 {
     float dist, time;
+    File tmp_file;
 
     switch (blk->code) {
     case 'T':
@@ -262,7 +316,7 @@ void GCode::_block_do(struct gcode_block *blk)
         switch (blk->cmd) {
         case 0: /* G0 - Uncontrolled move */
         case 1: /* G1 - Controlled move */
-            Serial.print("// G0");
+            Serial.print("// G");Serial.print(blk->cmd);
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
                     continue;
@@ -272,7 +326,10 @@ void GCode::_block_do(struct gcode_block *blk)
                 Serial.print(":");
                 Serial.print(blk->axis[i]);
             }
-            Serial.print(" F:");Serial.print(blk->f);
+            if (blk->update_mask & GCODE_UPDATE_F) {
+                Serial.print(" F:");Serial.print(blk->f);
+                _feed_rate = blk->f * _units_to_mm;
+            }
 
             dist = 0.0;
             for (int i = 0; i < AXIS_MAX; i++) {
@@ -289,8 +346,8 @@ void GCode::_block_do(struct gcode_block *blk)
                 dist += delta * delta;
             }
 
-            time = sqrt(dist) / blk->f;
-            Serial.print(" t:");Serial.print(time);
+            time = sqrt(dist) / _feed_rate;
+            Serial.print(" t:");Serial.print(time * 60);
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
@@ -355,6 +412,38 @@ void GCode::_block_do(struct gcode_block *blk)
             for (int i = 0; i < AXIS_MAX; i++)
                 _axis[i]->motor_disable();
             break;
+        case 23: /* M23 - Select SD file */
+            _file = SD.open(blk->filename);
+            break;
+        case 24: /* M24 - Start SD print */
+            _file_enable = true;
+            break;
+        case 25: /* M25 - Pause SD print */
+            _file_enable = false;
+            break;
+        case 26: /* M26 - Set SD position */
+            if (_file)
+                _file.seek((uint32_t)blk->s);
+            break;
+        case 30: /* M30 - Delete file from SD */
+            SD.remove(blk->filename);
+            break;
+        case 32: /* M32 - Select SD file, and print */
+            _file = SD.open(blk->filename);
+            _file_enable = true;
+            break;
+        case 36: /* M36 - Return file information */
+            tmp_file = File(blk->filename);
+            _stream->print(" {\"err\":");
+            if (tmp_file) {
+                _stream->print("0,\"size\":");
+                _stream->print(tmp_file.size());
+                _stream->print("}");
+                tmp_file.close();
+            } else {
+                _stream->print("1}");
+            }
+            break;
         case 114: /* M114 - Get current position */
             _stream->print(" C: X:");
             _stream->print((float)_axis[AXIS_X]->position_get_mm()/
@@ -397,7 +486,6 @@ void GCode::update()
     /* If the axes are idle, then the current active block is done */
     if (!busy) {
         if (_block.active) {
-Serial.print("// Done ");Serial.print(_block.active->code);Serial.println(_block.active->cmd);
             _block.active->next = _block.free;
             _block.free = _block.active;
             _block.active = NULL;
@@ -408,9 +496,6 @@ Serial.print("// Done ");Serial.print(_block.active->code);Serial.println(_block
             _block.pending = _block.pending->next;
             if (_block.pending == NULL)
                 _block.pending_tail = &_block.pending;
-Serial.print("// Execute ");Serial.print(_block.active->code);Serial.println(_block.active->cmd);
-            if (!_block.active->buffered)
-                _stream->print("ok");
             _block_do(_block.active);
             if (!_block.active->buffered)
                 _stream->println();
@@ -419,54 +504,63 @@ Serial.print("// Execute ");Serial.print(_block.active->code);Serial.println(_bl
 
     blk = _block.free;
     if (!blk) {
-Serial.println("// No free blocks");
         return;
     }
 
-    if (!_stream->available())
-        return;
-
-    char c = _stream->read();
+    /* Serial input is of higher priority than SD input */
+    if (_stream->available()) {
+        char c = _stream->read();
 Serial.print(c);
 if (c == '\r') Serial.print('\n');
-    if (!_line_update(&_line, c))
-        return;
+        if (_line_update(&_stream_line, c)) {
+            if (_mode == MODE_STOP)
+                _stream->println("!!");
 
-    if (_mode == MODE_STOP)
-        _stream->println("!!");
-
-    /* We have a line! */
-    if (!_line_parse(&_line, blk)) {
-        _stream->print("rs");
-        _stream->println(blk->num);
-    } else {
-        /* Special case: M112 Emergency stop */
-        if (blk->code == 'M' && blk->cmd == 112) {
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_disable();
-            _mode = MODE_STOP;
-            _stream->println("ok");
-            return;
+            if (_line_parse(&_stream_line, blk)) {
+                _process_block(blk);
+                _stream->print("ok");
+                if (blk->buffered)
+                    _stream->println();
+                return;
+            } else {
+                _stream->print("rs");
+                _stream->println(blk->num);
+            }
         }
-
-        if (_mode == MODE_SLEEP) {
-Serial.println("// Waking up...");
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_enable();
-            _mode = MODE_ON;
-        }
-
-        _block.free = blk->next;
-        blk->next = NULL;
-        *_block.pending_tail = blk;
-        _block.pending_tail = &blk->next;
-        if (blk->buffered)
-            _stream->println("ok");
     }
 
-    _line_reset(&_line);
+    if (_file_enable && _file && _file.available()) {
+        char c = _file.read();
+        if (_line_update(&_file_line, c) &&
+            _line_parse(&_file_line, blk)) {
+            _process_block(blk);
+            return;
+        }
+    }
 
     return;
+}
+
+void GCode::_process_block(struct gcode_block *blk)
+{
+    /* Special case: M112 Emergency stop */
+    if (blk->code == 'M' && blk->cmd == 112) {
+        for (int i = 0; i < AXIS_MAX; i++)
+            _axis[i]->motor_disable();
+        _mode = MODE_STOP;
+        return;
+    }
+
+    if (_mode == MODE_SLEEP) {
+        for (int i = 0; i < AXIS_MAX; i++)
+            _axis[i]->motor_enable();
+        _mode = MODE_ON;
+    }
+
+    _block.free = blk->next;
+    blk->next = NULL;
+    *_block.pending_tail = blk;
+    _block.pending_tail = &blk->next;
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

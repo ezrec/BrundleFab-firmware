@@ -18,6 +18,8 @@
 #ifndef TOOLINK_H
 #define TOOLINK_H
 
+#include <stdint.h>
+
 #include "Tool.h"
 
 #include "pinout.h"

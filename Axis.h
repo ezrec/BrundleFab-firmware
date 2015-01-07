@@ -18,6 +18,7 @@
 #ifndef AXIS_H
 #define AXIS_H
 
+#include <stdint.h>
 #include <math.h>
 
 #define AXIS_MAX        4

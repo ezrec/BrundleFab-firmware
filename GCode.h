@@ -18,6 +18,9 @@
 #ifndef GCODE_H
 #define GCODE_H
 
+#include <Stream.h>
+#include <SD.h>
+
 #include "Axis.h"
 #include "ToolHead.h"
 
@@ -38,6 +41,7 @@ struct gcode_parameter {
 #define GCODE_UPDATE_Q          (1 << (AXIS_MAX + 5))
 #define GCODE_UPDATE_R          (1 << (AXIS_MAX + 6))
 #define GCODE_UPDATE_S          (1 << (AXIS_MAX + 7))
+#define GCODE_UPDATE_FILENAME   (1 << (AXIS_MAX + 8))
 
 struct gcode_block {
     struct gcode_block *next;
@@ -56,6 +60,7 @@ struct gcode_block {
     float q;        /* parameter */
     float r;        /* parameter */
     float s;        /* parameter */
+    char filename[PATH_MAX];    /* For M28, M29, M30, M32, M36 */
 };
 
 struct gcode_line {
@@ -69,9 +74,11 @@ class GCode {
         Axis *_axis[AXIS_MAX];
         ToolHead *_tool;
         Stream *_stream;
+        File _file;
+        bool _file_enable;
         float _offset[AXIS_MAX];
 
-        struct gcode_line _line;
+        struct gcode_line _stream_line, _file_line;
         struct {
             struct gcode_block ring[GCODE_QUEUE_MAX];
             struct gcode_block *free;
@@ -80,6 +87,7 @@ class GCode {
         } _block;
         enum { ABSOLUTE = 0, RELATIVE } _positioning;
         float _units_to_mm;
+        float _feed_rate;
         enum { MODE_SLEEP = 0, MODE_STOP, MODE_ON } _mode;
     public:
         GCode() { }
@@ -91,6 +99,7 @@ class GCode {
             _units_to_mm = 1.0;
             _stream = s;
             _tool = t;
+            _feed_rate = 1.0;
             _axis[AXIS_X] = x;
             _axis[AXIS_Y] = y;
             _axis[AXIS_Z] = z;
@@ -135,6 +144,7 @@ class GCode {
     private:
         void _block_do(struct gcode_block *blk);
         bool _line_parse(struct gcode_line *line, struct gcode_block *blk);
+        void _process_block(struct gcode_block *blk);
 };
 
 #endif /* GCODE_H */
