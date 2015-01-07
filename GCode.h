@@ -18,6 +18,11 @@
 #ifndef GCODE_H
 #define GCODE_H
 
+#include <limits.h>
+#ifndef PATH_MAX
+#define PATH_MAX        256
+#endif
+
 #include <Stream.h>
 #include <SD.h>
 

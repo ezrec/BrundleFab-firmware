@@ -83,7 +83,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
                 } else
                     continue;
             }
-            if (ipart < sizeof(state.filename)-1) {
+            if (ipart < (int)sizeof(state.filename)-1) {
                 state.filename[ipart++] = *cp;
                 continue;
             }
@@ -433,7 +433,7 @@ void GCode::_block_do(struct gcode_block *blk)
             _file_enable = true;
             break;
         case 36: /* M36 - Return file information */
-            tmp_file = File(blk->filename);
+            tmp_file = SD.open(blk->filename);
             _stream->print(" {\"err\":");
             if (tmp_file) {
                 _stream->print("0,\"size\":");
