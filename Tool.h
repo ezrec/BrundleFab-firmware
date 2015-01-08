@@ -22,6 +22,12 @@ class Tool {
     private:
         bool _active;
     public:
+        enum parm_e {
+            TOOL_PARM_P,
+            TOOL_PARM_Q,
+            TOOL_PARM_R,
+            TOOL_PARM_S,
+        };
         Tool()
         {
             _active = false;
@@ -48,7 +54,7 @@ class Tool {
         {
         }
 
-        virtual void parm(float p, float q = 0.0, float r = 0.0, float s = 0.0)
+        virtual void parm(enum parm_e p, float val = 0.0)
         {
         }
 };

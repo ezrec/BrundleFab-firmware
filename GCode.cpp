@@ -306,10 +306,27 @@ void GCode::_block_do(struct gcode_block *blk)
 
     switch (blk->code) {
     case 'T':
+        _debug->print("// T");_debug->print(blk->cmd);
         _tool->stop();
         _tool->select(blk->cmd);
-        _tool->parm(blk->p, blk->q, blk->r, blk->s);
+        if (blk->update_mask & GCODE_UPDATE_P) {
+            _tool->parm(Tool::TOOL_PARM_P, blk->p);
+            _debug->print(" P:");_debug->print(blk->p);
+        }
+        if (blk->update_mask & GCODE_UPDATE_Q) {
+            _tool->parm(Tool::TOOL_PARM_Q, blk->q);
+            _debug->print(" Q:");_debug->print(blk->q);
+        }
+        if (blk->update_mask & GCODE_UPDATE_R) {
+            _tool->parm(Tool::TOOL_PARM_R, blk->r);
+            _debug->print(" R:");_debug->print(blk->r);
+        }
+        if (blk->update_mask & GCODE_UPDATE_S) {
+            _tool->parm(Tool::TOOL_PARM_S, blk->s);
+            _debug->print(" S:");_debug->print(blk->s);
+        }
         _tool->start();
+        _debug->println();
         break;
     case 'G':
         switch (blk->cmd) {

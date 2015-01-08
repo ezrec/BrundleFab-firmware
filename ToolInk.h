@@ -27,13 +27,23 @@
 class ToolInk : public Tool {
     private:
         uint16_t _pattern;
+        uint32_t _pulse_per_minute;
     public:
-        virtual void parm(float p, float q = 0.0, float r = 0.0, float s = 0.0)
+        virtual void parm(enum parm_e p, float val = 0.0)
         {
-            _pattern = (uint16_t)(int)p;
+            switch (p) {
+            case TOOL_PARM_P: _pattern = (uint16_t)val; break;
+            case TOOL_PARM_S: _pulse_per_minute = (uint32_t)val; break;
+            default: break;
+            }
         }
 
         virtual void update(void);
+
+        virtual bool active(void)
+        {
+            return (_pattern && (_pulse_per_minute > 0)) ? true : false;
+        }
 };
 
 #endif /* TOOLINK_H */
