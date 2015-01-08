@@ -131,6 +131,10 @@ class GCode {
 
             for (int i = 0; i < AXIS_MAX; i++)
                 _axis[i]->motor_disable();
+
+            _file = SD.open("start.gco");
+            if (_file)
+                _file_enable = true;
         }
 
         float axis_position(int axis_id)
