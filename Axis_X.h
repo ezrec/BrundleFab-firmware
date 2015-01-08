@@ -23,11 +23,6 @@
 
 class Axis_X : public Axis_DCEncoder {
     private:
-        static const int _adaMotor = X_MOTOR;
-        static const int _pinEncoderA = XENC_A;
-        static const int _pinEncoderB = XENC_B;
-        static const int _pinStopMin =  XSTP_MIN;
-
         static const int _pwmMinimum = 98;
         static const int _pwmMaximum = 255;
 
@@ -38,9 +33,9 @@ class Axis_X : public Axis_DCEncoder {
 
     public:
         Axis_X() : Axis_DCEncoder(
-                _adaMotor, _pwmMinimum, _pwmMaximum,
-                _pinEncoderA, _pinEncoderB,
-                _pinStopMin, -1,
+                X_MOTOR, _pwmMinimum, _pwmMaximum,
+                XENC_A, XENC_B,
+                XSTP_MIN, XSTP_MAX,
                 _mmWidth, _minPos, _maxPos)
         {
         }

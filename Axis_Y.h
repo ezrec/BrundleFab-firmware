@@ -23,23 +23,19 @@
 
 class Axis_Y : public Axis_DCEncoder {
     private:
-        static const int _adaMotor = Y_MOTOR;
-        static const int _pinEncoderA = YENC_A;
-        static const int _pinEncoderB = YENC_B;
-
         static const int _pwmMinimum = 98;
         static const int _pwmMaximum = 200;
 
-        static const int _maxPos = 5250;
         static const int _minPos = 0;
+        static const int _maxPos = 5250;
 
         static const float _mmWidth = 230.0;
 
     public:
         Axis_Y() : Axis_DCEncoder(
-                _adaMotor, _pwmMinimum, _pwmMaximum,
-                _pinEncoderA, _pinEncoderB,
-                -1, -1,
+                Y_MOTOR, _pwmMinimum, _pwmMaximum,
+                YENC_A, YENC_B,
+                YSTP_MIN, YSTP_MAX,
                 _mmWidth, _minPos, _maxPos)
         {
         }

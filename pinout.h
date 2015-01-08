@@ -33,16 +33,21 @@
 #define XENC_A                  18      /* Encoder A */
 #define XENC_B                  29      /* Encoder B */
 #define XSTP_MIN                33      /* Endstop (minimum) */
+#define XSTP_MAX                -1
 
 #define Y_MOTOR                 4       /* AFMotor M4 */
 #define YENC_A                  19      /* D18 */
 #define YENC_B                  27      /* D14 */
+#define YSTP_MIN                -1
+#define YSTP_MAX                -1
 
 #define Z_MOTOR                 2       /* Adafruit_MotorShield M2 */
+#define ZSTP_MIN                -1      /* Endstop (Minimim) */
 #define ZSTP_MAX                37      /* Endstop (Maximim) */
 
 #define E_MOTOR                 1       /* Adafruit_MotorShield M1 */
 #define ESTP_MIN                39      /* Endstop (Minimum) */
+#define ESTP_MAX                -1      /* Endstop (Maximim) */
 
 #endif /* PINOUT_H */
 /* vim: set shiftwidth=4 expandtab:  */

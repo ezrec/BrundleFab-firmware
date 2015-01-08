@@ -22,7 +22,7 @@
 
 class Axis_Z : public Axis_AFStepper {
     public:
-        Axis_Z() : Axis_AFStepper(2, -1, ZSTP_MAX)
+        Axis_Z() : Axis_AFStepper(Z_MOTOR, ZSTP_MIN, ZSTP_MAX)
         {
         }
 };

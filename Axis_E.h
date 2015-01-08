@@ -22,7 +22,7 @@
 
 class Axis_E : public Axis_AFStepper {
     public:
-        Axis_E() : Axis_AFStepper(1, ESTP_MIN, -1)
+        Axis_E() : Axis_AFStepper(E_MOTOR, ESTP_MIN, ESTP_MAX)
         {
         }
 };
