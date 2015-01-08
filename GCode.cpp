@@ -441,6 +441,16 @@ void GCode::_block_do(struct gcode_block *blk)
             if (_file)
                 _file.seek((uint32_t)blk->s);
             break;
+        case 27: /* M27 - Show SD position */
+            if (_file) {
+                _stream->print(" SD printing byte ");
+                _stream->print(_file.position());
+                _stream->print("/");
+                _stream->print(_file.size());
+            } else {
+                _stream->print(" Not SD printing");
+            }
+            break;
         case 30: /* M30 - Delete file from SD */
             SD.remove(blk->filename);
             break;
