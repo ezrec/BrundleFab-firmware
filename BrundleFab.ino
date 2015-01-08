@@ -90,8 +90,19 @@ void loop()
 {
     bool motion = false;
 
+    gcode.update();
+
+    for (int i = 0; i < AXIS_MAX; i++) {
+        motion |= axis[i]->update();
+    }
+
+    if (motion) {
+        tools.update();
+        return;
+    }
+
     if (next_update < millis()) {
-        next_update = millis() + 500;
+        next_update = millis() + 250;
         float pos[AXIS_MAX];
         int height = tft.height();
         int tool = tools.selected();
@@ -131,16 +142,6 @@ void loop()
 
         if (tools.active())
             tft.drawPixel(pos[AXIS_X] + pos[AXIS_Y]/2, height - (pos[AXIS_Z] + pos[AXIS_Y]/2 + 1), ST7735_CYAN);
-    }
-
-    gcode.update();
-
-    for (int i = 0; i < AXIS_MAX; i++) {
-        motion |= axis[i]->update();
-    }
-
-    if (motion) {
-        tools.update();
     }
 }
 
