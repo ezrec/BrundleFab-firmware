@@ -28,6 +28,11 @@
 
 #include "Axis.h"
 #include "ToolHead.h"
+#include "StreamNull.h"
+
+#define DEBUG_ECHO      (1 << 0)
+#define DEBUG_INFO      (1 << 1)
+#define DEBUG_ERR       (1 << 2)
 
 #define GCODE_LINE_MAX  128
 #define GCODE_QUEUE_MAX 4
@@ -78,7 +83,8 @@ class GCode {
     private:
         Axis *_axis[AXIS_MAX];
         ToolHead *_tool;
-        Stream *_stream;
+        Stream *_stream, *_debug;
+        StreamNull _null;
         File _file;
         bool _file_enable;
         float _offset[AXIS_MAX];
@@ -95,7 +101,7 @@ class GCode {
         float _feed_rate;
         enum { MODE_SLEEP = 0, MODE_STOP, MODE_ON } _mode;
     public:
-        GCode() { }
+        GCode() : _null() { }
         ~GCode() { }
 
         void begin(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t)
@@ -114,6 +120,7 @@ class GCode {
             _offset[AXIS_Z] = 0;
             _offset[AXIS_E] = 0;
 
+            _debug = &_null;
             _stream->println("start");
 
             for (int i = 0; i < GCODE_QUEUE_MAX - 1; i++) {

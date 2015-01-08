@@ -15,7 +15,6 @@
  *
  */
 
-#include <HardwareSerial.h>
 #include <ctype.h>
 
 #include <Wire.h>
@@ -316,18 +315,18 @@ void GCode::_block_do(struct gcode_block *blk)
         switch (blk->cmd) {
         case 0: /* G0 - Uncontrolled move */
         case 1: /* G1 - Controlled move */
-            Serial.print("// G");Serial.print(blk->cmd);
+            _debug->print("// G");_debug->print(blk->cmd);
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
                     continue;
 
-                Serial.print(" ");
-                Serial.print("XYZE"[i]);
-                Serial.print(":");
-                Serial.print(blk->axis[i]);
+                _debug->print(" ");
+                _debug->print("XYZE"[i]);
+                _debug->print(":");
+                _debug->print(blk->axis[i]);
             }
             if (blk->update_mask & GCODE_UPDATE_F) {
-                Serial.print(" F:");Serial.print(blk->f);
+                _debug->print(" F:");_debug->print(blk->f);
                 _feed_rate = blk->f * _units_to_mm;
             }
 
@@ -347,7 +346,7 @@ void GCode::_block_do(struct gcode_block *blk)
             }
 
             time = sqrt(dist) / _feed_rate;
-            Serial.print(" t:");Serial.print(time * 60);
+            _debug->print(" t:");_debug->print(time * 60);
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
@@ -358,11 +357,11 @@ void GCode::_block_do(struct gcode_block *blk)
                 case RELATIVE: _axis[i]->target_move_mm(blk->axis[i], time); break;
                 }
             }
-            Serial.print(" C: X:");Serial.print(_axis[AXIS_X]->target_get_mm());
-            Serial.print(" Y:");Serial.print(_axis[AXIS_Y]->target_get_mm());
-            Serial.print(" Z:");Serial.print(_axis[AXIS_Z]->target_get_mm());
-            Serial.print(" E:");Serial.print(_axis[AXIS_E]->target_get_mm());
-            Serial.println();
+            _debug->print(" C: X:");_debug->print(_axis[AXIS_X]->target_get_mm());
+            _debug->print(" Y:");_debug->print(_axis[AXIS_Y]->target_get_mm());
+            _debug->print(" Z:");_debug->print(_axis[AXIS_Z]->target_get_mm());
+            _debug->print(" E:");_debug->print(_axis[AXIS_E]->target_get_mm());
+            _debug->println();
             break;
         case 20: /* G20 - Set units to inches */
             _units_to_mm = 25.4;
@@ -444,6 +443,15 @@ void GCode::_block_do(struct gcode_block *blk)
                 _stream->print("1}");
             }
             break;
+        case 111: /* M111 - Set debug */
+            if (blk->update_mask & GCODE_UPDATE_S) {
+                int s = (int)blk->s;
+                if (s & DEBUG_ECHO)
+                    _debug = _stream;
+                else
+                    _debug = &_null;
+            }
+            break;
         case 114: /* M114 - Get current position */
             _stream->print(" C: X:");
             _stream->print((float)_axis[AXIS_X]->position_get_mm()/
@@ -497,8 +505,6 @@ void GCode::update()
             if (_block.pending == NULL)
                 _block.pending_tail = &_block.pending;
             _block_do(_block.active);
-            if (!_block.active->buffered)
-                _stream->println();
         }
     }
 
@@ -510,17 +516,18 @@ void GCode::update()
     /* Serial input is of higher priority than SD input */
     if (_stream->available()) {
         char c = _stream->read();
-Serial.print(c);
-if (c == '\r') Serial.print('\n');
+        if (_stream_line.len == 0)
+            _debug->print("// ");
+        _debug->print(c);
+        if (c == '\r')
+            _debug->print('\n');
         if (_line_update(&_stream_line, c)) {
-            if (_mode == MODE_STOP)
+            if (_mode == MODE_STOP) {
                 _stream->println("!!");
-
-            if (_line_parse(&_stream_line, blk)) {
-                _process_block(blk);
+            } else if (_line_parse(&_stream_line, blk)) {
                 _stream->print("ok");
-                if (blk->buffered)
-                    _stream->println();
+                _process_block(blk);
+                _stream->println();
                 return;
             } else {
                 _stream->print("rs");
@@ -557,10 +564,14 @@ void GCode::_process_block(struct gcode_block *blk)
         _mode = MODE_ON;
     }
 
-    _block.free = blk->next;
-    blk->next = NULL;
-    *_block.pending_tail = blk;
-    _block.pending_tail = &blk->next;
+    if (blk->buffered) {
+        _block.free = blk->next;
+        blk->next = NULL;
+        *_block.pending_tail = blk;
+        _block.pending_tail = &blk->next;
+    } else {
+        _block_do(blk);
+    }
 }
 
 /* vim: set shiftwidth=4 expandtab:  */
