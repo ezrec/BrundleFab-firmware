@@ -117,6 +117,11 @@ class Axis_AFStepper : public Axis {
             Axis::motor_disable();
         }
 
+        virtual bool motor_active()
+        {
+            return _mode != IDLE;
+        }
+
         virtual int32_t position_get(void)
         {
             return _position;
