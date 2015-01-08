@@ -59,7 +59,6 @@ class Adafruit_ST7735 : public Adafruit_GFX {
         }
         ~Adafruit_ST7735()
         {
-            SDL_Quit();
         }
 
         void initR(uint8_t options = INITR_GREENTAB)
@@ -73,7 +72,11 @@ class Adafruit_ST7735 : public Adafruit_GFX {
         }
         void drawPixel(int16_t x, int16_t y, uint16_t color)
         {
-            Uint32 pixel = SDL_MapRGB(_surface->format, 
+            Uint32 pixel;
+            if (x < 0 || x >= WIDTH || y <0 || y >= HEIGHT)
+                return;
+            
+            pixel = SDL_MapRGB(_surface->format, 
                     ((color >> 11) << 3) & 0xff,
                     ((color >>  5) << 2) & 0xff,
                     ((color >>  0) << 3) & 0xff);

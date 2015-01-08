@@ -5,6 +5,8 @@
 #ifndef _AFMotor_h_
 #define _AFMotor_h_
 
+#include "Encoder.h"
+
     //#define MOTORDEBUG 1
 
 #define MICROSTEPS 16                       // 8 or 16
@@ -60,12 +62,22 @@ class AFMotorController
 class AF_DCMotor
 {
  public:
-  AF_DCMotor(uint8_t motornum, uint8_t freq = DC_MOTOR_PWM_RATE) {}
-  void run(uint8_t) {}
-  void setSpeed(uint8_t) {}
+  AF_DCMotor(uint8_t motornum, uint8_t freq = DC_MOTOR_PWM_RATE) {
+    if (motornum == X_MOTOR) {
+      _encoder = XENC_A;
+      encoder_pinstop(_encoder, 11500, XSTP_MIN, XSTP_MAX);
+    } else if (motornum == Y_MOTOR) {
+      _encoder = YENC_A;
+      encoder_pinstop(_encoder, 5250, YSTP_MIN, YSTP_MAX);
+    } else {
+      _encoder = 0;
+    }
+  }
+  void run(uint8_t dir) { encoder_dir(_encoder, dir); }
+  void setSpeed(uint8_t pwm) { encoder_speed(_encoder, pwm); }
 
  private:
-  uint8_t motornum, pwmfreq;
+  int _encoder;
 };
 
 class AF_Stepper {

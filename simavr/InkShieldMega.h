@@ -18,6 +18,8 @@
 #ifndef SIMAVR_INKSHIELDMEGA_H
 #define SIMAVR_INKSHIELDMEGA_H
 
+#include "Arduino.h"
+
 class InkShieldA0A3 {
     private:
         int _pulse_pin;
@@ -30,6 +32,16 @@ class InkShieldA0A3 {
 
         void spray_ink(int pattern)
         {
+            for (int i = 0; i < 16; i++) {
+                if (pattern & (1 << i)) {
+                    analogWrite(0, (i >> 0) & 1);
+                    analogWrite(1, (i >> 1) & 1);
+                    analogWrite(2, (i >> 2) & 1);
+                    analogWrite(3, (i >> 3) & 1);
+                }
+                digitalWrite(_pulse_pin, 1);
+                digitalWrite(_pulse_pin, 0);
+            }
         }
 };
 

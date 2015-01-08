@@ -28,6 +28,7 @@ SRCS = simavr/main.cpp \
        simavr/Arduino.cpp \
        simavr/WString.cpp \
        simavr/Print.cpp \
+       simavr/Encoder.cpp \
        simavr/Stream.cpp \
        simavr/Adafruit_GFX.cpp \
        GCode.cpp \

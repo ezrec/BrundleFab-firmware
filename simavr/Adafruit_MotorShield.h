@@ -3,6 +3,8 @@
 
 #include <inttypes.h>
 
+#include "Encoder.h"
+
 //#define MOTORDEBUG
 
 #define MICROSTEPS 16         // 8 or 16
@@ -33,13 +35,17 @@ class Adafruit_DCMotor
  public:
   Adafruit_DCMotor(void) {}
   friend class Adafruit_MotorShield;
-  void run(uint8_t) {}
-  void setSpeed(uint8_t) {}
+  void run(uint8_t dir)
+  {
+    encoder_dir(_encoder, dir);
+  }
+  void setSpeed(uint8_t pwm)
+  {
+    encoder_speed(_encoder, pwm);
+  }
   
  private:
-  uint8_t PWMpin, IN1pin, IN2pin;
-  Adafruit_MotorShield *MC;
-  uint8_t motornum;
+  int _encoder;
 };
 
 class Adafruit_StepperMotor {
@@ -47,32 +53,75 @@ class Adafruit_StepperMotor {
   Adafruit_StepperMotor(void) {}
   friend class Adafruit_MotorShield;
 
-  void step(uint16_t steps, uint8_t dir,  uint8_t style = SINGLE) {}
+  void step(uint16_t steps, uint8_t dir,  uint8_t style = SINGLE)
+  {
+    switch (style) {
+    case SINGLE: steps *= MICROSTEPS; break;
+    case DOUBLE: steps *= MICROSTEPS/2; break;
+    default: break;
+    }
+
+    if (dir == FORWARD) {
+      if (steppingcounter + steps >= _limit)
+        steppingcounter = _limit;
+      else
+        steppingcounter += steps;
+    } else if (dir == BACKWARD) {
+      if (steppingcounter < steps)
+        steppingcounter = 0;
+      else
+        steppingcounter -= steps;
+    }
+
+    digitalWrite(_pinStopMin, (steppingcounter == 0) ? 1 : 0);
+
+    digitalWrite(_pinStopMax, (steppingcounter == _limit) ? 1 : 0);
+  }
+
   void setSpeed(uint16_t) {}
   uint8_t onestep(uint8_t dir, uint8_t style) {}
   void release(void) {}
   uint32_t usperstep, steppingcounter;
 
- private:
-  uint8_t PWMApin, AIN1pin, AIN2pin;
-  uint8_t PWMBpin, BIN1pin, BIN2pin;
-  uint16_t revsteps; // # steps per revolution
-  uint8_t currentstep;
-  Adafruit_MotorShield *MC;
-  uint8_t steppernum;
+  private:
+    int _pinStopMin;
+    int _pinStopMax;
+    uint32_t _limit;
 };
 
 class Adafruit_MotorShield
 {
-  public:
-    Adafruit_MotorShield(uint8_t addr = 0x60) {}
-    friend class Adafruit_DCMotor;
-    void begin(uint16_t freq = 1600) {}
+public:
+  Adafruit_MotorShield(uint8_t addr = 0x60) {}
+  friend class Adafruit_DCMotor;
+  void begin(uint16_t freq = 1600) {}
 
-    void setPWM(uint8_t pin, uint16_t val) {}
+  void setPWM(uint8_t pin, uint16_t val) {}
     void setPin(uint8_t pin, boolean val) {}
-    Adafruit_DCMotor *getMotor(uint8_t n) {}
-    Adafruit_StepperMotor *getStepper(uint16_t steps, uint8_t n) {}
+    Adafruit_DCMotor *getMotor(uint8_t n)
+    {
+      return &dcmotors[n];
+    }
+    Adafruit_StepperMotor *getStepper(uint16_t steps, uint8_t n)
+    {
+      Adafruit_StepperMotor *st;
+
+      if (n <= 0 || n > 2)
+        return NULL;
+      st = &steppers[n-1];
+
+      if (n == Z_MOTOR) {
+        st->_pinStopMin = -1;
+        st->_pinStopMax = ZSTP_MAX;
+        st->_limit = 11500 * MICROSTEPS;
+      }
+      if (n == E_MOTOR) {
+        st->_pinStopMin = ESTP_MIN;
+        st->_pinStopMax = -1;
+        st->_limit = 11500 * MICROSTEPS;
+      }
+      return st;
+    }
  private:
     uint8_t _addr;
     uint16_t _freq;
@@ -81,3 +130,5 @@ class Adafruit_MotorShield
 };
 
 #endif
+
+/* vim: set shiftwidth=2 expandtab: */

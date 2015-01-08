@@ -26,8 +26,6 @@ void pinMode(uint8_t pin, uint8_t mode)
 {
     if (pin >= 54)
         return;
-    if (mode == INPUT_PULLUP)
-        digitalPin[pin] = 1;
 }
 
 void digitalWrite(uint8_t pin, uint8_t value)
