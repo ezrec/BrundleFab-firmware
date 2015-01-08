@@ -75,7 +75,8 @@ void encoder_dir(int n, uint8_t dir)
     if ((_encoder[n].dir == FORWARD ||
         _encoder[n].dir == BACKWARD) &&
             now != _encoder[n].time) {
-        delta = (now - _encoder[n].time) * (_encoder[n].pwm / 200.0);
+        int speed = (_encoder[n].pwm > 97)  ? (_encoder[n].pwm - 97) : 0;
+        delta = speed;
 
         if (_encoder[n].dir == FORWARD)
             _encoder[n].position += delta;
