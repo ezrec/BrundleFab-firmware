@@ -19,7 +19,7 @@
 
 #include "Encoder.h"
 
-#define ENCODER_SCALE   2
+#define ENCODER_SCALE   64
 
 static struct encoder {
     unsigned long time;
@@ -70,12 +70,12 @@ void encoder_speed(int n, uint8_t pwm)
 void encoder_dir(int n, uint8_t dir)
 {
     int32_t delta;
-    unsigned long now = millis();
+    unsigned long now = micros();
    
     if ((_encoder[n].dir == FORWARD ||
         _encoder[n].dir == BACKWARD) &&
             now != _encoder[n].time) {
-        delta = (now - _encoder[n].time);
+        delta = (now - _encoder[n].time) * (_encoder[n].pwm / 200.0);
 
         if (_encoder[n].dir == FORWARD)
             _encoder[n].position += delta;
