@@ -342,28 +342,33 @@ void GCode::_block_do(struct gcode_block *blk)
                 _debug->print(":");
                 _debug->print(blk->axis[i]);
             }
+
             if (blk->update_mask & GCODE_UPDATE_F) {
                 _debug->print(" F:");_debug->print(blk->f);
                 _feed_rate = blk->f * _units_to_mm;
             }
 
-            dist = 0.0;
-            for (int i = 0; i < AXIS_MAX; i++) {
-                if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
-                    continue;
+            if (blk->cmd == 1) {
+                dist = 0.0;
+                for (int i = 0; i < AXIS_MAX; i++) {
+                    if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
+                        continue;
 
-                float delta = blk->axis[i];
+                    float delta = blk->axis[i];
 
-                switch (_positioning) {
-                case ABSOLUTE: delta -= _offset[i] + _axis[i]->target_get_mm();
-                case RELATIVE: break;
+                    switch (_positioning) {
+                    case ABSOLUTE: delta -= _offset[i] + _axis[i]->target_get_mm();
+                    case RELATIVE: break;
+                    }
+
+                    dist += delta * delta;
                 }
 
-                dist += delta * delta;
+                time = sqrt(dist) / _feed_rate;
+                _debug->print(" t:");_debug->print(time * 60);
+            } else {
+                time = -1;
             }
-
-            time = sqrt(dist) / _feed_rate;
-            _debug->print(" t:");_debug->print(time * 60);
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
