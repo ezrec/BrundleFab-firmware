@@ -9,7 +9,7 @@
 #define RELEASE 4
 
 void encoder_pinstop(int n, uint32_t range, int pin_min, int pin_max);
-void encoder_speed(int encoder, uint8_t pwm);
+void encoder_speed(int encoder, float speed);
 void encoder_dir(int encoder, uint8_t dir);
 void encoder_reset(int n);
 void encoder_set(int n, int32_t pos);

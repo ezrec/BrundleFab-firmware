@@ -15,16 +15,18 @@
  *
  */
 
+#include <math.h>
+
 #include "Arduino.h"
 
 #include "Encoder.h"
 
-#define ENCODER_SCALE   64
+#define SPEED_SCALE     1.7f
 
 static struct encoder {
     unsigned long time;
     uint8_t dir;
-    uint8_t pwm;
+    float speed;
     int32_t position;
     uint32_t range;
     int32_t offset;
@@ -35,7 +37,7 @@ static struct encoder {
 
 void encoder_pinstop(int n, uint32_t range, int pin_min, int pin_max)
 {
-    _encoder[n].range = (range + 20) * ENCODER_SCALE;
+    _encoder[n].range = (range + 20);
     _encoder[n].pin_min = pin_min;
     _encoder[n].pin_max = pin_max;
 }
@@ -43,7 +45,7 @@ void encoder_pinstop(int n, uint32_t range, int pin_min, int pin_max)
 void encoder_reset(int n)
 {
     _encoder[n].dir = BRAKE;
-    _encoder[n].pwm = 0;
+    _encoder[n].speed = 0;
     _encoder[n].position = 0;
 }
 
@@ -52,53 +54,64 @@ void encoder_set(int n, int32_t pos)
     _encoder[n].offset = (pos - encoder_get(n));
 }
 
-int32_t encoder_get(int n)
+static float encoder_position(int n, unsigned long now)
 {
-    encoder_dir(n, _encoder[n].dir);
-    return _encoder[n].position / ENCODER_SCALE + _encoder[n].offset;
-}
+    float pos;
 
-void encoder_speed(int n, uint8_t pwm)
-{
-    int dir = _encoder[n].dir;
-
-    encoder_dir(n, BRAKE);
-    _encoder[n].pwm = pwm;
-    encoder_dir(n, dir);
-}
-
-void encoder_dir(int n, uint8_t dir)
-{
-    int32_t delta;
-    unsigned long now = micros();
-   
     if ((_encoder[n].dir == FORWARD ||
         _encoder[n].dir == BACKWARD) &&
             now != _encoder[n].time) {
-        int speed = (_encoder[n].pwm > 97)  ? (_encoder[n].pwm - 97) : 0;
-        delta = speed;
+        float delta;
+ 
+        delta = (now - _encoder[n].time) * _encoder[n].speed * SPEED_SCALE;
 
-        if (_encoder[n].dir == FORWARD)
-            _encoder[n].position += delta;
-        else if (_encoder[n].dir == BACKWARD)
-            _encoder[n].position -= delta;
+        if (_encoder[n].dir == BACKWARD)
+            delta *= -1.0;
+            
+        pos = _encoder[n].position + delta;
 
-        if (_encoder[n].position > _encoder[n].range) {
+        if (pos > _encoder[n].range) {
+            pos = _encoder[n].range;
             digitalWrite(_encoder[n].pin_max, 1);
-            printf("ENDSTOP: %d Max\r\n", n);
         } else {
             digitalWrite(_encoder[n].pin_max, 0);
         }
 
-        if (_encoder[n].position < 0) {
-            _encoder[n].position = 0;
-            printf("ENDSTOP: %d Min\r\n", n);
+        if (pos < 0) {
+            pos = 0;
             digitalWrite(_encoder[n].pin_min, 1);
         } else {
             digitalWrite(_encoder[n].pin_min, 0);
         }
+    } else {
+        pos =  _encoder[n].position;
     }
 
+    return pos;
+}
+
+int32_t encoder_get(int n)
+{
+    unsigned long now = micros();
+   
+    return encoder_position(n, now) + _encoder[n].offset;
+}
+
+void encoder_speed(int n, float speed)
+{
+    int dir = _encoder[n].dir;
+    unsigned long now = micros();
+
+    _encoder[n].position = encoder_position(n, now);
+    _encoder[n].speed = cos(M_PI + speed * M_PI) + 1.0;
+    _encoder[n].time = now;
+}
+
+void encoder_dir(int n, uint8_t dir)
+{
+    unsigned long now = micros();
+  
+    _encoder[n].position = encoder_position(n, now);
     _encoder[n].dir = dir;
     _encoder[n].time = now;
 }

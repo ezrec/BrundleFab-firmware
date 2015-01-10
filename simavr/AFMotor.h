@@ -74,10 +74,17 @@ class AF_DCMotor
     }
   }
   void run(uint8_t dir) { encoder_dir(_encoder, dir); }
-  void setSpeed(uint8_t pwm) { encoder_speed(_encoder, pwm); }
+  void setSpeed(uint8_t pwm)
+  {
+     if (pwm != _pwm) {
+       encoder_speed(_encoder, (pwm >= 96) ? (((float)pwm - 96.0)/(200.0-96.0)) : 0.0);
+     }
+     _pwm = pwm;
+  }
 
  private:
   int _encoder;
+  uint8_t _pwm;
 };
 
 class AF_Stepper {

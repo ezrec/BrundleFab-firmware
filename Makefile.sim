@@ -15,6 +15,7 @@
 #
 MKDIR ?= mkdir -p
 
+.PRECIOUS := build-host/%.cpp
 .SUFFIXES := .cpp .o .ino
 
 all: BrundleFab
