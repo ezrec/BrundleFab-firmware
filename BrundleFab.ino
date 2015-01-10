@@ -129,8 +129,8 @@ void loop()
         }
 
         if (pos[AXIS_Y] != position[AXIS_Y]) {
-            tft.drawPixel(position[AXIS_Y]/2, height - (position[AXIS_Y]/2 + 1), ST7735_YELLOW);
-            tft.drawPixel(pos[AXIS_Y]/2, height - (pos[AXIS_Y]/2 + 1), ST7735_GREEN);
+            tft.drawPixel(position[AXIS_Y]/4, height - (position[AXIS_Y]/4 + 1), ST7735_YELLOW);
+            tft.drawPixel(pos[AXIS_Y]/4, height - (pos[AXIS_Y]/4 + 1), ST7735_GREEN);
             position[AXIS_Y] = pos[AXIS_Y];
         }
 
@@ -140,8 +140,10 @@ void loop()
             position[AXIS_Z] = pos[AXIS_Z];
         }
 
-        if (tools.active())
-            tft.drawPixel(pos[AXIS_X] + pos[AXIS_Y]/2, height - (pos[AXIS_Z] + pos[AXIS_Y]/2 + 1), ST7735_CYAN);
+        if (tools.active()) {
+            uint16_t color = ST7735_WHITE - ((1 << 11) | (2 << 5) | 1) * (int)pos[AXIS_Y]/2;
+            tft.drawPixel(pos[AXIS_X] + pos[AXIS_Y]/4, height - (pos[AXIS_Z] + pos[AXIS_Y]/4 + 1), color);
+        }
     }
 }
 
