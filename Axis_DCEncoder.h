@@ -79,7 +79,7 @@ class Axis_DCEncoder : public Axis {
             _pinEncoderA = enc_a;
             _pinEncoderB = enc_b;
             _pwmMinimum = pwm_min;
-            _pwmMaximum = pwm_min;
+            _pwmMaximum = pwm_max;
             _mm_to_position = (float)(_maxPos - _minPos)/mm;
         }
 
