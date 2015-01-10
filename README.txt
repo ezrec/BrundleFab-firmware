@@ -36,9 +36,11 @@ M23 filename			Select SD file
 M24				Start SD print
 M25				Pause SD print
 M26 Sn				Set position in SD file
+M27				Report SD print position
 M30 filename			Delete file from SD
 M32 filename			Select SD and and printf
-M36 filename			Resturn file information
+M36 filename			Return file information
+M111 Sn				Set debug flags
 M114				Get current position
 M115				Get firmware version
 M124				Emergency stop
