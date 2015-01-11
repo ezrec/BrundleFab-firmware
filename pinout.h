@@ -49,5 +49,7 @@
 #define ESTP_MIN                39      /* Endstop (Minimum) */
 #define ESTP_MAX                -1      /* Endstop (Maximim) */
 
+#define FUSER_ENABLE            43      /* Heater enable */
+
 #endif /* PINOUT_H */
 /* vim: set shiftwidth=4 expandtab:  */

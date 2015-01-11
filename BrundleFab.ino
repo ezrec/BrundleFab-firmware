@@ -30,6 +30,7 @@
 
 #include "ToolHead.h"
 #include "ToolInk.h"
+#include "ToolFuser.h"
 
 //#include "MenuGFX.h"
 
@@ -41,7 +42,7 @@ GCode gcode;
 
 ToolHead tools;
 ToolInk toolInk_Black;
-Tool toolHeater;
+ToolFuser toolFuser = ToolFuser(FUSER_ENABLE);
 Axis_X axisX;
 Axis_Y axisY;
 Axis_Z axisZ;
@@ -56,7 +57,7 @@ void setup()
     SD.begin(SD_CS);
 
     tools.attach(1, &toolInk_Black);
-    tools.attach(20, &toolHeater);
+    tools.attach(20, &toolFuser);
     tools.begin();
 
     tft.initR(TFT_INITR);
