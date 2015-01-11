@@ -23,7 +23,8 @@ all: BrundleFab
 clean:
 	rm -rf build-host
 
-CXXFLAGS = -g3 -I. -Isimavr -I/usr/include/SDL
+CXXFLAGS = -g3 -I. -Isimavr -I/usr/include/SDL \
+	   -DAXIS_NULL
 
 SRCS = simavr/main.cpp \
        simavr/Arduino.cpp \
@@ -33,7 +34,8 @@ SRCS = simavr/main.cpp \
        simavr/Stream.cpp \
        simavr/Adafruit_GFX.cpp \
        GCode.cpp \
-       ToolInk.cpp
+       ToolInk.cpp \
+       Visualize.cpp
 
 OBJS = $(SRCS:%.cpp=build-host/%.o)
 

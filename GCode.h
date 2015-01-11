@@ -29,6 +29,7 @@
 #include "Axis.h"
 #include "ToolHead.h"
 #include "StreamNull.h"
+#include "Visualize.h"
 
 #define DEBUG_ECHO      (1 << 0)
 #define DEBUG_INFO      (1 << 1)
@@ -81,6 +82,7 @@ struct gcode_line {
 class GCode {
     private:
         Axis *_axis[AXIS_MAX];
+        Visualize *_vis;
         ToolHead *_tool;
         Stream *_stream, *_debug;
         StreamNull _null;
@@ -100,11 +102,10 @@ class GCode {
         float _feed_rate;
         enum { MODE_SLEEP = 0, MODE_STOP, MODE_ON } _mode;
     public:
-        GCode() : _null() { }
-        ~GCode() { }
-
-        void begin(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t)
+        GCode(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t,
+                   Visualize *vis = 0)
         {
+            _vis = vis;
             _positioning = ABSOLUTE;
             _units_to_mm = 1.0;
             _stream = s;
@@ -120,13 +121,18 @@ class GCode {
             _offset[AXIS_E] = 0;
 
             _debug = &_null;
-            _stream->println("start");
 
             for (int i = 0; i < GCODE_QUEUE_MAX - 1; i++) {
                 _block.ring[i].next = &_block.ring[i+1];
             }
+
             _block.free = &_block.ring[0];
             _block.pending_tail = &_block.pending;
+        }
+
+        void begin()
+        {
+            _stream->println("start");
 
             for (int i = 0; i < AXIS_MAX; i++)
                 _axis[i]->motor_disable();
@@ -136,26 +142,13 @@ class GCode {
                 _file_enable = true;
         }
 
-        float axis_position(int axis_id)
-        {
-            if (axis_id < 0 || axis_id > AXIS_MAX)
-                return 0;
-            return _axis[axis_id]->position_get();
-        }
-
-        float axis_target(int axis_id)
-        {
-            if (axis_id < 0 || axis_id > AXIS_MAX)
-                return 0;
-            return _axis[axis_id]->target_get();
-        }
-
-        int tool_selected(void)
-        {
-            return _tool->selected();
-        }
-
         void update();
+
+        Axis *axis(int axis)
+        {
+            return _axis[axis];
+        }
+
     private:
         void _block_do(struct gcode_block *blk);
         bool _line_parse(struct gcode_line *line, struct gcode_block *blk);

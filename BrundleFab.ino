@@ -32,23 +32,37 @@
 #include "ToolInk.h"
 #include "ToolFuser.h"
 
-//#include "MenuGFX.h"
+#include "Visualize.h"
 
 Adafruit_MotorShield AFMS;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-GCode gcode;
+#ifndef AXIS_NULL
+#define AXIS_NULL
+#endif
 
 ToolHead tools;
 ToolInk toolInk_Black;
 ToolFuser toolFuser = ToolFuser(FUSER_ENABLE);
+#ifdef AXIS_NULL
+Axis axisX;
+Axis axisY;
+Axis axisZ;
+Axis axisE;
+#else
 Axis_X axisX;
 Axis_Y axisY;
 Axis_Z axisZ;
 Axis_E axisE;
+#endif
 
-Axis *axis[AXIS_MAX];
+Visualize vis = Visualize(&tft, ST7735_TFTWIDTH, ST7735_TFTHEIGHT_18 - 5*8,
+                                0, 5 * 8);
+
+GCode gcode = GCode(&Serial,
+                    &axisX, &axisY, &axisZ, &axisE,
+                    &tools, &vis);
 
 void setup()
 {
@@ -65,89 +79,54 @@ void setup()
 
     tft.initR(TFT_INITR);
     tft.fillScreen(ST7735_BLACK);
-    tft.setCursor(0, 0);
-    tft.setTextColor(ST7735_WHITE);
+    tft.setTextColor(ST7735_BLACK, ST7735_WHITE);
+    tft.setCursor((ST7735_TFTWIDTH - 12*6)/2, 0);
+    tft.print(" BrundleFab ");
+    tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
     tft.setTextWrap(true);
-    tft.print("BrundleFab");
 
-    axis[AXIS_X] = &axisX;
-    axis[AXIS_Y] = &axisY;
-    axis[AXIS_Z] = &axisZ;
-    axis[AXIS_E] = &axisE;
+    vis.color_set(VC_AXIS + AXIS_X, ST7735_RED);
+    vis.color_set(VC_AXIS + AXIS_Y, ST7735_GREEN);
+    vis.color_set(VC_AXIS + AXIS_Z, ST7735_BLUE);
+    vis.color_set(VC_MOVE, ST7735_CYAN);
+    vis.color_set(VC_FEED, ST7735_YELLOW);
+    vis.color_set(VC_TOOL, ST7735_WHITE);
+    vis.begin();
 
-    for (int i = 0; i < AXIS_MAX; i++) {
-        axis[i]->begin();
-    }
+    axisX.begin();
+    axisY.begin();
+    axisZ.begin();
+    axisE.begin();
 
-    gcode.begin(&Serial,
-                axis[AXIS_X],
-                axis[AXIS_Y],
-                axis[AXIS_Z],
-                axis[AXIS_E],
-                &tools);
+    gcode.begin();
 }
 
 static unsigned long next_update = millis();
-static float position[AXIS_MAX];
 
 void loop()
 {
-    bool motion = false;
-
     gcode.update();
 
-    for (int i = 0; i < AXIS_MAX; i++) {
-        motion |= axis[i]->update();
-    }
-
-    if (motion) {
-        tools.update();
-        return;
-    }
-
     if (next_update < millis()) {
-        next_update = millis() + 250;
+        next_update = millis() + 1000;
         float pos[AXIS_MAX];
-        int height = tft.height();
         int tool = tools.selected();
 
         for (int i = 0; i < AXIS_MAX; i++) {
-            pos[i] = axis[i]->position_get_mm();
+            Axis *axis = gcode.axis(i);
+            pos[i] = axis->position_get_mm();
             tft.setCursor((1 + 1 + 1 + 3 + 1 + 2 + 1) * 6 * (i & 1), 8 * (3 + (i>>1)));
             tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
             tft.print("XYZE"[i]); tft.print(": ");
-            tft.setTextColor(axis[i]->motor_active() ? ST7735_RED : ST7735_WHITE, ST7735_BLACK);
+            tft.setTextColor(axis->motor_active() ? ST7735_RED : ST7735_WHITE, ST7735_BLACK);
             tft.print((pos[i] < -99.99) ? -99 : (pos[i] > 999.99 ? 999 : ((int)pos[i])));
             tft.print(".");
             tft.print((pos[i] < -99.99) ? 99 : (pos[i] > 999.99 ? 99 : ((int)(pos[i]*100) % 100)));
             tft.print(" ");
         }
-        tft.println();
+        tft.setCursor(2, 8 * 5 + 2);
         tft.setTextColor(tool ? ST7735_RED : ST7735_WHITE, ST7735_BLACK);
         tft.print("T: ");tft.print(tool);
-
-        if (pos[AXIS_X] != position[AXIS_X]) {
-            tft.drawPixel(position[AXIS_X], height-1, ST7735_YELLOW);
-            tft.drawPixel(pos[AXIS_X], height-1, ST7735_RED);
-            position[AXIS_X] = pos[AXIS_X];
-        }
-
-        if (pos[AXIS_Y] != position[AXIS_Y]) {
-            tft.drawPixel(position[AXIS_Y]/4, height - (position[AXIS_Y]/4 + 1), ST7735_YELLOW);
-            tft.drawPixel(pos[AXIS_Y]/4, height - (pos[AXIS_Y]/4 + 1), ST7735_GREEN);
-            position[AXIS_Y] = pos[AXIS_Y];
-        }
-
-        if (pos[AXIS_Z] != position[AXIS_Z]) {
-            tft.drawPixel(0, height - (position[AXIS_Z] + 1), ST7735_YELLOW);
-            tft.drawPixel(0, height - (pos[AXIS_Z] + 1), ST7735_BLUE);
-            position[AXIS_Z] = pos[AXIS_Z];
-        }
-
-        if (tools.active()) {
-            uint16_t color = ST7735_WHITE - ((1 << 11) | (2 << 5) | 1) * (int)pos[AXIS_Y]/2;
-            tft.drawPixel(pos[AXIS_X] + pos[AXIS_Y]/4, height - (pos[AXIS_Z] + pos[AXIS_Y]/4 + 1), color);
-        }
     }
 }
 

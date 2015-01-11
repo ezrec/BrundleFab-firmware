@@ -299,6 +299,46 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     state.next = blk->next;
     *blk = state;
 
+    if (_debug != &_null && blk->code) {
+        _debug->print("// ");
+        _debug->print(blk->code);_debug->print(blk->cmd);
+        for (int i = 0; i < AXIS_MAX; i++) {
+            if (blk->update_mask & GCODE_UPDATE_AXIS(i)) {
+                _debug->print(" ");
+                _debug->print("XYZE"[i]);
+                _debug->print(blk->axis[i]);
+            }
+        }
+        if (blk->update_mask & GCODE_UPDATE_F) {
+            _debug->print(" F");_debug->print(blk->f);
+        }
+        if (blk->update_mask & GCODE_UPDATE_I) {
+            _debug->print(" I");_debug->print(blk->i);
+        }
+        if (blk->update_mask & GCODE_UPDATE_J) {
+            _debug->print(" J");_debug->print(blk->j);
+        }
+        if (blk->update_mask & GCODE_UPDATE_K) {
+            _debug->print(" K");_debug->print(blk->k);
+        }
+        if (blk->update_mask & GCODE_UPDATE_P) {
+            _debug->print(" P");_debug->print(blk->p);
+        }
+        if (blk->update_mask & GCODE_UPDATE_Q) {
+            _debug->print(" Q");_debug->print(blk->q);
+        }
+        if (blk->update_mask & GCODE_UPDATE_R) {
+            _debug->print(" R");_debug->print(blk->r);
+        }
+        if (blk->update_mask & GCODE_UPDATE_S) {
+            _debug->print(" S");_debug->print(blk->s);
+        }
+        if (blk->update_mask & GCODE_UPDATE_FILENAME) {
+            _debug->print(" ");_debug->print(blk->filename);
+        }
+        _debug->println();
+    }
+
     _line_reset(line);
 
     return true;
@@ -311,47 +351,16 @@ void GCode::_block_do(struct gcode_block *blk)
 
     switch (blk->code) {
     case 'T':
-        _debug->print("// T");_debug->print(blk->cmd);
         _tool->stop();
         _tool->select(blk->cmd);
-        if (blk->update_mask & GCODE_UPDATE_P) {
-            _tool->parm(Tool::TOOL_PARM_P, blk->p);
-            _debug->print(" P:");_debug->print(blk->p);
-        }
-        if (blk->update_mask & GCODE_UPDATE_Q) {
-            _tool->parm(Tool::TOOL_PARM_Q, blk->q);
-            _debug->print(" Q:");_debug->print(blk->q);
-        }
-        if (blk->update_mask & GCODE_UPDATE_R) {
-            _tool->parm(Tool::TOOL_PARM_R, blk->r);
-            _debug->print(" R:");_debug->print(blk->r);
-        }
-        if (blk->update_mask & GCODE_UPDATE_S) {
-            _tool->parm(Tool::TOOL_PARM_S, blk->s);
-            _debug->print(" S:");_debug->print(blk->s);
-        }
         _tool->start();
-        _debug->println();
         break;
     case 'G':
         switch (blk->cmd) {
         case 0: /* G0 - Uncontrolled move */
         case 1: /* G1 - Controlled move */
-            _debug->print("// G");_debug->print(blk->cmd);
-            for (int i = 0; i < AXIS_MAX; i++) {
-                if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
-                    continue;
-
-                _debug->print(" ");
-                _debug->print("XYZE"[i]);
-                _debug->print(":");
-                _debug->print(blk->axis[i]);
-            }
-
-            if (blk->update_mask & GCODE_UPDATE_F) {
-                _debug->print(" F:");_debug->print(blk->f);
+            if (blk->update_mask & GCODE_UPDATE_F)
                 _feed_rate = blk->f * _units_to_mm;
-            }
 
             if (blk->cmd == 1) {
                 dist = 0.0;
@@ -370,7 +379,6 @@ void GCode::_block_do(struct gcode_block *blk)
                 }
 
                 time = sqrt(dist) / _feed_rate;
-                _debug->print(" t:");_debug->print(time * 60);
             } else {
                 time = -1;
             }
@@ -384,11 +392,24 @@ void GCode::_block_do(struct gcode_block *blk)
                 case RELATIVE: _axis[i]->target_move_mm(blk->axis[i], time); break;
                 }
             }
-            _debug->print(" C: X:");_debug->print(_axis[AXIS_X]->target_get_mm());
-            _debug->print(" Y:");_debug->print(_axis[AXIS_Y]->target_get_mm());
-            _debug->print(" Z:");_debug->print(_axis[AXIS_Z]->target_get_mm());
-            _debug->print(" E:");_debug->print(_axis[AXIS_E]->target_get_mm());
-            _debug->println();
+            if (_vis) {
+                float pos[AXIS_MAX];
+                for (int i = 0; i < AXIS_MAX; i++)
+                    pos[i] = _axis[i]->target_get_mm();
+
+                int color;
+                int tool = _tool->selected();
+                /* Non-build tools are invisible.
+                 * If we aren't extruding, use the tool color
+                 */
+                if (tool < 1 || tool > 16)
+                    color = VC_INVISIBLE;
+                else if (blk->update_mask & GCODE_UPDATE_AXIS(AXIS_E))
+                    color = (blk->cmd == 0) ? VC_MOVE : VC_FEED;
+                else
+                    color = VC_TOOL;
+                _vis->line_to(color, pos);
+            }
             break;
         case 20: /* G20 - Set units to inches */
             _units_to_mm = 25.4;
@@ -397,6 +418,16 @@ void GCode::_block_do(struct gcode_block *blk)
             _units_to_mm = 1.0;
             break;
         case 28: /* G28 - Re-home */
+            if (_vis) {
+                float pos[AXIS_MAX];
+                for (int i = 0; i < AXIS_MAX; i++) {
+                    if (blk->update_mask & GCODE_UPDATE_AXIS(i))
+                        pos[i] = blk->axis[i];
+                    else
+                        pos[i] = _axis[i]->target_get_mm();
+                }
+                _vis->cursor_to(pos);
+            }
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (blk->update_mask & GCODE_UPDATE_AXIS(i))
                     _axis[i]->home_mm(blk->axis[i]);
@@ -545,13 +576,16 @@ void GCode::_block_do(struct gcode_block *blk)
 void GCode::update()
 {
     struct gcode_block *blk;
-    bool busy = false;
+    bool motion = false;
 
     for (int i = 0; i < AXIS_MAX; i++)
-        busy |= _axis[i]->motor_active();
+        motion |= _axis[i]->update();
+
+    if (motion)
+        _tool->update();
 
     /* If the axes are idle, then the current active block is done */
-    if (!busy) {
+    if (!motion) {
         if (_block.active) {
             _block.active->next = _block.free;
             _block.free = _block.active;
