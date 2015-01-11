@@ -9,6 +9,8 @@ Y axis holds the print carriage.
 Z axis is the part bin.
 E axis is the powder feed bin.
 
+Build area size is 175x260x230mm
+
 Tool 0 is the null tool
 Tools 1..16 are the ink sprayers
 Tool 20 is the heat lamp
