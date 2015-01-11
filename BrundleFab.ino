@@ -56,8 +56,8 @@ void setup()
     AFMS.begin(1000);
     SD.begin(SD_CS);
 
-    tools.attach(1, &toolInk_Black);
-    tools.attach(20, &toolFuser);
+    tools.attach(TOOL_INK_BLACK, &toolInk_Black);
+    tools.attach(TOOL_FUSER, &toolFuser);
     tools.begin();
 
     tft.initR(TFT_INITR);

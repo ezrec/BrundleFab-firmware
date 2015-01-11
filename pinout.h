@@ -18,6 +18,9 @@
 #ifndef PINOUT_H
 #define PINOUT_H
 
+#define TOOL_INK_BLACK          1
+#define TOOL_FUSER              20
+
 #define INKSHIELD_PULSE         2       /* D2 */
 #define INKSHIELD_CLASS         InkShieldA0A3
 
