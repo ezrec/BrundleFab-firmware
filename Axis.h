@@ -36,7 +36,7 @@ class Axis {
     Axis() { _enabled = false; _valid = false; _target = 0; _velocity = 0; }
     ~Axis() {}
 
-    virtual const float mm_to_position() { return 1.0; }
+    virtual const float mm_to_position() { return 100.0; }
 
     virtual void begin()
     {
@@ -71,10 +71,10 @@ class Axis {
     virtual int32_t target_get(void) { return _target; }
 
     virtual const int32_t position_min(void) { return 0; }
-    virtual const int32_t position_max(void) { return 0; }
+    virtual const int32_t position_max(void) { return 2000; }
 
     virtual bool position_valid() { return _valid; } 
-    virtual int32_t position_get() { return 0; }
+    virtual int32_t position_get() { return _target; }
 
     virtual inline void home_mm(float pos_mm)
     {
