@@ -195,15 +195,16 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
     }
 }
 
-void Visualize::_flatten(const float *pos, struct point *pt)
+static void fcolor(float *c, uint16_t r5g6b5, float y, float max_y)
 {
-    pt->x = (pos[AXIS_X] + pos[AXIS_Y]/4.0) * _scale;
-    pt->y = (_height - 1) - (pos[AXIS_Z] + pos[AXIS_Y]/4) * _scale;
-}
+    float dim;
 
-static void fcolor(float *c, uint16_t r5g6b5, float y)
-{
-    float dim = (250.0 - y) / 250.0;
+    /* Scale a bit so that the back of the build box
+     * isn't completely black
+     */
+    max_y *= 1.5;
+
+    dim = (max_y - y) / max_y;
     c[0] = ((r5g6b5 >> 11) & 0x1f) / 31.0 * dim;
     c[1] = ((r5g6b5 >>  5) & 0x3f) / 63.0 * dim;
     c[2] = ((r5g6b5 >>  0) & 0x1f) / 31.0 * dim;
@@ -217,8 +218,8 @@ void Visualize::line_to(int ndx, const float *pos)
 
     if (ndx >= 0 && ndx < VC_MAX) {
         float c1[3], c2[3];
-        fcolor(c1, _color[ndx], _cursor.position[AXIS_Y]);
-        fcolor(c2, _color[ndx], pos[AXIS_Y]);
+        fcolor(c1, _color[ndx], _cursor.position[AXIS_Y], _max[AXIS_Y]);
+        fcolor(c2, _color[ndx], pos[AXIS_Y], _max[AXIS_Y]);
         _line2d_clipped(c1, &_cursor.point, c2, &loc);
     }
 

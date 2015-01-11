@@ -43,7 +43,7 @@ class Visualize {
         /* Location of visualization */
         int _top,_left,_width,_height;
 
-        float _scale;
+        float _scale, _max[AXIS_MAX];
 
         uint16_t _color[VC_MAX];
 
@@ -62,6 +62,9 @@ class Visualize {
             _width = width - 2;
             _height = height - 2;
 
+            for (int i = 0; i < AXIS_MAX; i++)
+                _max[i] = 1000.0;
+
             for (int i = 0; i < VC_MAX; i++)
                 _color[i] = 0xffff;
             _color[VC_BACKGROUND] = 0;
@@ -74,6 +77,30 @@ class Visualize {
             clear();
         }
 
+        void begin(float x_mm, float y_mm, float z_mm)
+        {
+            /* Bounding box for the build volume */
+            float scale_y = (float)_height/(z_mm + y_mm/4.0);
+            float scale_x = (float)_width/(x_mm + y_mm/4.0);
+
+            _max[AXIS_X] = x_mm;
+            _max[AXIS_Y] = y_mm;
+            _max[AXIS_Z] = z_mm;
+
+            begin(scale_x > scale_y ? scale_y : scale_x);
+
+            cursor_to(0, 0, z_mm);
+            line_to(VC_AXIS + AXIS_Y, 0, y_mm, z_mm);
+            line_to(VC_AXIS + AXIS_Z, 0, y_mm, 0);
+            line_to(VC_AXIS + AXIS_X, x_mm, y_mm, 0);
+            line_to(VC_AXIS + AXIS_Z, x_mm, y_mm, z_mm);
+            line_to(VC_AXIS + AXIS_Y, x_mm, 0, z_mm);
+            line_to(VC_AXIS + AXIS_Z, x_mm, 0, 0);
+            line_to(VC_AXIS + AXIS_Y, x_mm, y_mm, 0);
+            cursor_to(0, 0, z_mm);
+            line_to(VC_AXIS + AXIS_X, x_mm, 0, z_mm);
+        }
+
         void clear()
         {
             float zero[AXIS_MAX] = {};
@@ -81,7 +108,7 @@ class Visualize {
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 float pos[AXIS_MAX] = {};
-                pos[i] = 1000.0f;
+                pos[i] = _max[i];
                 cursor_to(zero);
                 line_to(VC_AXIS + i, pos);
             }
@@ -103,10 +130,34 @@ class Visualize {
         }
 
         void line_to(int color_ndx, const float *pos);
+
         void pixel_at(int color_ndx, const float *pos);
 
+        void cursor_to(float x, float y, float z)
+        {
+            float pos[AXIS_MAX] = { x, y, z };
+            cursor_to(pos);
+        }
+
+        void line_to(int color_ndx, float x, float y, float z)
+        {
+            float pos[AXIS_MAX] = { x, y, z };
+            line_to(color_ndx, pos);
+        }
+
+        void pixel_at(int color_ndx, float x, float y, float z)
+        {
+            float pos[AXIS_MAX] = { x, y, z };
+            pixel_at(color_ndx, pos);
+        }
+
     private:
-        void _flatten(const float *pos, struct point *pt);
+        void _flatten(const float *pos, struct point *pt)
+        {
+            pt->x = (pos[AXIS_X] + pos[AXIS_Y]/4.0) * _scale + 1;
+            pt->y = (_height - 1) - (pos[AXIS_Z] + pos[AXIS_Y]/4) * _scale - 1;
+        }
+
         void _pixel2d_clipped(uint16_t color, const struct point *pt);
         void _line2d_clipped(const float *a_color, const struct point *a,
                              const float *b_color, const struct point *b);
