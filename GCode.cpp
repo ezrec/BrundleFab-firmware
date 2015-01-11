@@ -131,6 +131,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         ipart= 0;
 
         if (state.code == 'M' && (
+                    state.cmd == 20 ||
                     state.cmd == 23 ||
                     state.cmd == 28 ||
                     state.cmd == 29 ||
@@ -290,6 +291,11 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     if (state.update_mask & GCODE_UPDATE_F)
         state.f *= _units_to_mm;
 
+    if (state.update_mask & GCODE_UPDATE_FILENAME) {
+        if (state.filename[0] == 0)
+            state.update_mask &= ~GCODE_UPDATE_FILENAME;
+    }
+
     state.next = blk->next;
     *blk = state;
 
@@ -431,6 +437,28 @@ void GCode::_block_do(struct gcode_block *blk)
         case 18: /* M18 - Disable motors */
             for (int i = 0; i < AXIS_MAX; i++)
                 _axis[i]->motor_disable();
+            break;
+        case 20: /* M20 - List SD files */
+            _stream->print(" Files: {");
+            if (blk->update_mask & GCODE_UPDATE_FILENAME)
+                tmp_file = SD.open(blk->filename);
+            else
+                tmp_file = SD.open("/");
+            if (tmp_file) {
+                for (;;) {
+                    File entry = tmp_file.openNextFile();
+                    if (!entry)
+                        break;
+
+                    if (strcmp(entry.name(), ".") == 0)
+                        continue;
+                    if (strcmp(entry.name(), "..") == 0)
+                        continue;
+                    _stream->print(entry.name());
+                    _stream->print(",");
+                }
+            }
+            _stream->print("}");
             break;
         case 23: /* M23 - Select SD file */
             _file = SD.open(blk->filename);

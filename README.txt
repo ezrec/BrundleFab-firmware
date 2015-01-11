@@ -32,6 +32,7 @@ M0				Stop
 M1				Sleep
 M17				Enable motors
 M18				Disable motors
+M20 dirname			List SD files
 M23 filename			Select SD file
 M24				Start SD print
 M25				Pause SD print
