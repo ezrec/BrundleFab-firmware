@@ -88,17 +88,6 @@ class Visualize {
             _max[AXIS_Z] = z_mm;
 
             begin(scale_x > scale_y ? scale_y : scale_x);
-
-            cursor_to(0, 0, z_mm);
-            line_to(VC_AXIS + AXIS_Y, 0, y_mm, z_mm);
-            line_to(VC_AXIS + AXIS_Z, 0, y_mm, 0);
-            line_to(VC_AXIS + AXIS_X, x_mm, y_mm, 0);
-            line_to(VC_AXIS + AXIS_Z, x_mm, y_mm, z_mm);
-            line_to(VC_AXIS + AXIS_Y, x_mm, 0, z_mm);
-            line_to(VC_AXIS + AXIS_Z, x_mm, 0, 0);
-            line_to(VC_AXIS + AXIS_Y, x_mm, y_mm, 0);
-            cursor_to(0, 0, z_mm);
-            line_to(VC_AXIS + AXIS_X, x_mm, 0, z_mm);
         }
 
         void clear()
@@ -112,6 +101,17 @@ class Visualize {
                 cursor_to(zero);
                 line_to(VC_AXIS + i, pos);
             }
+
+            cursor_to(0, 0, _max[AXIS_Z]);
+            line_to(VC_AXIS + AXIS_Y, 0, _max[AXIS_Y], _max[AXIS_Z]);
+            line_to(VC_AXIS + AXIS_Z, 0, _max[AXIS_Y], 0);
+            line_to(VC_AXIS + AXIS_X, _max[AXIS_X], _max[AXIS_Y], 0);
+            line_to(VC_AXIS + AXIS_Z, _max[AXIS_X], _max[AXIS_Y], _max[AXIS_Z]);
+            line_to(VC_AXIS + AXIS_Y, _max[AXIS_X], 0, _max[AXIS_Z]);
+            line_to(VC_AXIS + AXIS_Z, _max[AXIS_X], 0, 0);
+            line_to(VC_AXIS + AXIS_Y, _max[AXIS_X], _max[AXIS_Y], 0);
+            cursor_to(0, 0, _max[AXIS_Z]);
+            line_to(VC_AXIS + AXIS_X, _max[AXIS_X], 0, _max[AXIS_Z]);
         }
 
         void color_set(int color_ndx, uint16_t color)
