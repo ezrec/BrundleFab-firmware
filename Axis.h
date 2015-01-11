@@ -40,7 +40,7 @@ class Axis {
 
     virtual void begin()
     {
-        motor_disable();
+        motor_enable(false);
     }
 
     virtual void home(int32_t pos = 0)
@@ -50,8 +50,17 @@ class Axis {
     }
     virtual bool update() { return false; }
 
-    virtual void motor_enable() { _enabled = true; }
-    virtual void motor_disable() { motor_halt(); _enabled = false; _valid = false; }
+    virtual void motor_enable(bool enabled = true)
+    {
+        if (enabled)
+            _enabled = true;
+        else {
+           motor_halt();
+           _enabled = false;
+           _valid = false;
+        }
+    }
+
     virtual bool motor_enabled() { return _enabled; }
 
     virtual bool motor_active() { return false; }

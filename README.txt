@@ -46,6 +46,7 @@ M36 filename			Return file information
 M111 Sn				Set debug flags
 M114				Get current position
 M115				Get firmware version
+M117 message			Display message
 M124				Emergency stop
 
 T0				Select null tool

@@ -56,9 +56,11 @@ Axis_E axisE;
 Visualize vis = Visualize(&tft, ST7735_TFTWIDTH, ST7735_TFTHEIGHT_18 - 5*8,
                                 0, 5 * 8);
 
-GCode gcode = GCode(&Serial,
-                    &axisX, &axisY, &axisZ, &axisE,
-                    &tools, &vis);
+CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
+
+UserInterface ui = UserInterface(&cnc, &tft, ST7735_TFTWIDTH, 5*8, 0, 0);
+
+GCode gcode = GCode(&Serial, &cnc, &ui, &vis);
 
 void setup()
 {
@@ -74,12 +76,11 @@ void setup()
     tools.begin();
 
     tft.initR(TFT_INITR);
-    tft.fillScreen(ST7735_BLACK);
-    tft.setTextColor(ST7735_BLACK, ST7735_WHITE);
-    tft.setCursor((ST7735_TFTWIDTH - 12*6)/2, 0);
-    tft.print(" BrundleFab ");
-    tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
-    tft.setTextWrap(true);
+
+    ui.color_set(UC_BACKGROUND, ST7735_WHITE);
+    ui.color_set(UC_TEXT, ST7735_BLACK);
+    ui.color_set(UC_STATUS, ST7735_RED);
+    ui.begin();
 
     vis.color_set(VC_AXIS + AXIS_X, ST7735_RED);
     vis.color_set(VC_AXIS + AXIS_Y, ST7735_GREEN);
@@ -87,7 +88,7 @@ void setup()
     vis.color_set(VC_MOVE, ST7735_CYAN);
     vis.color_set(VC_FEED, ST7735_YELLOW);
     vis.color_set(VC_TOOL, ST7735_WHITE);
-    vis.begin(175, 260, 175);
+    vis.clear(175, 260, 175);
 
     axisX.begin();
     axisY.begin();
@@ -103,24 +104,7 @@ void loop()
 {
     gcode.update();
 
-    if (next_update < millis()) {
-        next_update = millis() + 1000;
-        float pos[AXIS_MAX];
-        int tool = tools.selected();
-
-        for (int i = 0; i < AXIS_MAX; i++) {
-            Axis *axis = gcode.axis(i);
-            pos[i] = axis->position_get_mm();
-            tft.setCursor((1 + 1 + 1 + 3 + 1 + 2 + 1) * 6 * (i & 1), 8 * (3 + (i>>1)));
-            tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
-            tft.print("XYZE"[i]); tft.print(": ");
-            tft.setTextColor(axis->motor_active() ? ST7735_RED : ST7735_WHITE, ST7735_BLACK);
-            tft.print(pos[i], (pos[i] < 0) ? 2 : 3);
-        }
-        tft.setCursor(2 + (tft.width()-6*3)/2, 8 * 5 + 2);
-        tft.setTextColor(tool ? ST7735_RED : ST7735_WHITE, ST7735_BLACK);
-        tft.print("T");tft.print(tool);
-    }
+    ui.update();
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

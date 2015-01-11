@@ -50,7 +50,7 @@ static bool _line_update(struct gcode_line *line, char c)
 bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 {
     uint8_t cs = 0;
-    enum { INVALID, INTEGER, FLOAT, FLOAT_FRAC, FILENAME } mode = INVALID;
+    enum { INVALID, INTEGER, FLOAT, FLOAT_FRAC, STRING } mode = INVALID;
     union {
         float *fptr;
         int *iptr;
@@ -71,17 +71,12 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 
         cs ^= c;
 
-        if (mode == FILENAME) {
-            if (isspace(c)) {
-                if (ipart > 0) {
-                    state.filename[ipart] = 0;
-                    mode = INVALID;
-                    ipart = 0;
-                } else
-                    continue;
-            }
-            if (ipart < (int)sizeof(state.filename)-1) {
-                state.filename[ipart++] = c;
+        if (mode == STRING) {
+            if (isspace(c) && ipart == 0)
+                continue;
+
+            if (ipart < (int)sizeof(state.string)-1) {
+                state.string[ipart++] = c;
                 continue;
             }
         } else {
@@ -120,8 +115,8 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         case FLOAT_FRAC:
             *data.fptr = neg * (float)ipart + ((float)fpart / (float)fbase);
             break;
-        case FILENAME:
-            state.filename[ipart] = 0;
+        case STRING:
+            state.string[ipart] = 0;
             break;
         case INVALID:
             break;
@@ -137,10 +132,11 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
                     state.cmd == 29 ||
                     state.cmd == 30 ||
                     state.cmd == 32 ||
-                    state.cmd == 36)) {
-            if (!(state.update_mask & GCODE_UPDATE_FILENAME)) {
-                state.update_mask |= GCODE_UPDATE_FILENAME;
-                mode = FILENAME;
+                    state.cmd == 36 ||
+                    state.cmd == 117)) {
+            if (!(state.update_mask & GCODE_UPDATE_STRING)) {
+                state.update_mask |= GCODE_UPDATE_STRING;
+                mode = STRING;
                 ipart = 0;
                 continue;
             }
@@ -246,8 +242,8 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     case FLOAT_FRAC:
         *data.fptr = neg * (float)ipart + ((float)fpart / (float)fbase);
         break;
-    case FILENAME:
-        state.filename[ipart] = 0;
+    case STRING:
+        state.string[ipart] = 0;
         break;
     case INVALID:
         break;
@@ -291,9 +287,9 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     if (state.update_mask & GCODE_UPDATE_F)
         state.f *= _units_to_mm;
 
-    if (state.update_mask & GCODE_UPDATE_FILENAME) {
-        if (state.filename[0] == 0)
-            state.update_mask &= ~GCODE_UPDATE_FILENAME;
+    if (state.update_mask & GCODE_UPDATE_STRING) {
+        if (state.string[0] == 0)
+            state.update_mask &= ~GCODE_UPDATE_STRING;
     }
 
     state.next = blk->next;
@@ -333,8 +329,8 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         if (blk->update_mask & GCODE_UPDATE_S) {
             _debug->print(" S");_debug->print(blk->s);
         }
-        if (blk->update_mask & GCODE_UPDATE_FILENAME) {
-            _debug->print(" ");_debug->print(blk->filename);
+        if (blk->update_mask & GCODE_UPDATE_STRING) {
+            _debug->print(" ");_debug->print(blk->string);
         }
         _debug->println();
     }
@@ -351,9 +347,9 @@ void GCode::_block_do(struct gcode_block *blk)
 
     switch (blk->code) {
     case 'T':
-        _tool->stop();
-        _tool->select(blk->cmd);
-        _tool->start();
+        _cnc->toolhead()->stop();
+        _cnc->toolhead()->select(blk->cmd);
+        _cnc->toolhead()->start();
         break;
     case 'G':
         switch (blk->cmd) {
@@ -371,7 +367,7 @@ void GCode::_block_do(struct gcode_block *blk)
                     float delta = blk->axis[i];
 
                     switch (_positioning) {
-                    case ABSOLUTE: delta -= _offset[i] + _axis[i]->target_get_mm();
+                    case ABSOLUTE: delta -= _offset[i] + _cnc->axis(i)->target_get_mm();
                     case RELATIVE: break;
                     }
 
@@ -388,17 +384,17 @@ void GCode::_block_do(struct gcode_block *blk)
                     continue;
 
                 switch (_positioning) {
-                case ABSOLUTE: _axis[i]->target_set_mm(blk->axis[i] + _offset[i], time); break;
-                case RELATIVE: _axis[i]->target_move_mm(blk->axis[i], time); break;
+                case ABSOLUTE: _cnc->axis(i)->target_set_mm(blk->axis[i] + _offset[i], time); break;
+                case RELATIVE: _cnc->axis(i)->target_move_mm(blk->axis[i], time); break;
                 }
             }
             if (_vis) {
                 float pos[AXIS_MAX];
-                for (int i = 0; i < AXIS_MAX; i++)
-                    pos[i] = _axis[i]->target_get_mm();
+
+                _cnc->target_get_mm(pos);
 
                 int color;
-                int tool = _tool->selected();
+                int tool = _cnc->toolhead()->selected();
                 /* Non-build tools are invisible.
                  * If we aren't extruding, use the tool color
                  */
@@ -424,13 +420,13 @@ void GCode::_block_do(struct gcode_block *blk)
                     if (blk->update_mask & GCODE_UPDATE_AXIS(i))
                         pos[i] = blk->axis[i];
                     else
-                        pos[i] = _axis[i]->target_get_mm();
+                        pos[i] = _cnc->axis(i)->target_get_mm();
                 }
                 _vis->cursor_to(pos);
             }
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (blk->update_mask & GCODE_UPDATE_AXIS(i))
-                    _axis[i]->home_mm(blk->axis[i]);
+                    _cnc->axis(i)->home_mm(blk->axis[i]);
             }
             break;
         case 90: /* G90 - Set to absolute positioning */
@@ -442,7 +438,7 @@ void GCode::_block_do(struct gcode_block *blk)
         case 92: /* G92 - Set position */
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (blk->update_mask & GCODE_UPDATE_AXIS(i))
-                    _offset[i] = (_axis[i]->position_get_mm() + blk->axis[i]);
+                    _offset[i] = (_cnc->axis(i)->position_get_mm() + blk->axis[i]);
             }
         default:
             break;
@@ -452,27 +448,22 @@ void GCode::_block_do(struct gcode_block *blk)
         switch (blk->cmd) {
         case 0: /* M0 - Stop */
             _mode = MODE_STOP;
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_disable();
+            _cnc->stop();
             break;
         case 1: /* M1 - Sleep */
             _mode = MODE_SLEEP;
-            _tool->stop();
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_disable();
+            _cnc->sleep();
             break;
         case 17: /* M17 - Enable motors */
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_enable();
+            _cnc->motor_enable();
             break;
         case 18: /* M18 - Disable motors */
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_disable();
+            _cnc->motor_disable();
             break;
         case 20: /* M20 - List SD files */
             _stream->print(" Files: {");
-            if (blk->update_mask & GCODE_UPDATE_FILENAME)
-                tmp_file = SD.open(blk->filename);
+            if (blk->update_mask & GCODE_UPDATE_STRING)
+                tmp_file = SD.open(blk->string);
             else
                 tmp_file = SD.open("/");
             if (tmp_file) {
@@ -492,7 +483,7 @@ void GCode::_block_do(struct gcode_block *blk)
             _stream->print("}");
             break;
         case 23: /* M23 - Select SD file */
-            _file = SD.open(blk->filename);
+            _file = SD.open(blk->string);
             break;
         case 24: /* M24 - Start SD print */
             _file_enable = true;
@@ -515,14 +506,14 @@ void GCode::_block_do(struct gcode_block *blk)
             }
             break;
         case 30: /* M30 - Delete file from SD */
-            SD.remove(blk->filename);
+            SD.remove(blk->string);
             break;
         case 32: /* M32 - Select SD file, and print */
-            _file = SD.open(blk->filename);
+            _file = SD.open(blk->string);
             _file_enable = true;
             break;
         case 36: /* M36 - Return file information */
-            tmp_file = SD.open(blk->filename);
+            tmp_file = SD.open(blk->string);
             _stream->print(" {\"err\":");
             if (tmp_file) {
                 _stream->print("0,\"size\":");
@@ -544,25 +535,29 @@ void GCode::_block_do(struct gcode_block *blk)
             break;
         case 114: /* M114 - Get current position */
             _stream->print(" C: X:");
-            _stream->print((float)_axis[AXIS_X]->position_get_mm()/
+            _stream->print((float)_cnc->axis(AXIS_X)->position_get_mm()/
                                   _units_to_mm);
             _stream->print(" Y:");
-            _stream->print((float)_axis[AXIS_Y]->position_get_mm()/
+            _stream->print((float)_cnc->axis(AXIS_Y)->position_get_mm()/
                                   _units_to_mm);
             _stream->print(" Z:");
-            _stream->print((float)_axis[AXIS_Z]->position_get_mm()/
+            _stream->print((float)_cnc->axis(AXIS_Z)->position_get_mm()/
                                   _units_to_mm);
             _stream->print(" E:");
-            _stream->print((float)_axis[AXIS_E]->position_get_mm()/
+            _stream->print((float)_cnc->axis(AXIS_E)->position_get_mm()/
                                   _units_to_mm);
             break;
         case 115: /* M115 - Get firmware version */
             _stream->print(" FIRMWARE_NAME:BrundleFab");
             break;
+        case 117:
+            _stream->print(" ");
+            _stream->print(blk->string);
+            if (_ui)
+                _ui->status(blk->string);
+            break;
         case 124: /* M124 - Immediate motor stop */
-            _tool->stop();
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_halt();
+            _cnc->stop();
             break;
         default:
             break;
@@ -578,11 +573,7 @@ void GCode::update()
     struct gcode_block *blk;
     bool motion = false;
 
-    for (int i = 0; i < AXIS_MAX; i++)
-        motion |= _axis[i]->update();
-
-    if (motion)
-        _tool->update();
+    motion = _cnc->update();
 
     /* If the axes are idle, then the current active block is done */
     if (!motion) {
@@ -645,15 +636,13 @@ void GCode::_process_block(struct gcode_block *blk)
 {
     /* Special case: M112 Emergency stop */
     if (blk->code == 'M' && blk->cmd == 112) {
-        for (int i = 0; i < AXIS_MAX; i++)
-            _axis[i]->motor_disable();
+        _cnc->motor_disable();
         _mode = MODE_STOP;
         return;
     }
 
     if (_mode == MODE_SLEEP) {
-        for (int i = 0; i < AXIS_MAX; i++)
-            _axis[i]->motor_enable();
+        _cnc->motor_enable();
         _mode = MODE_ON;
     }
 

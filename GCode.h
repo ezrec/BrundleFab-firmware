@@ -30,6 +30,7 @@
 #include "ToolHead.h"
 #include "StreamNull.h"
 #include "Visualize.h"
+#include "UserInterface.h"
 
 #define DEBUG_ECHO      (1 << 0)
 #define DEBUG_INFO      (1 << 1)
@@ -52,7 +53,7 @@ struct gcode_parameter {
 #define GCODE_UPDATE_Q          (1 << (AXIS_MAX + 5))
 #define GCODE_UPDATE_R          (1 << (AXIS_MAX + 6))
 #define GCODE_UPDATE_S          (1 << (AXIS_MAX + 7))
-#define GCODE_UPDATE_FILENAME   (1 << (AXIS_MAX + 8))
+#define GCODE_UPDATE_STRING     (1 << (AXIS_MAX + 8))
 
 struct gcode_block {
     struct gcode_block *next;
@@ -71,7 +72,7 @@ struct gcode_block {
     float q;        /* parameter */
     float r;        /* parameter */
     float s;        /* parameter */
-    char filename[PATH_MAX];    /* For M28, M29, M30, M32, M36 */
+    char string[PATH_MAX];    /* For M20, M28, M29, M30, M32, M36, M117 */
 };
 
 struct gcode_line {
@@ -81,9 +82,7 @@ struct gcode_line {
 
 class GCode {
     private:
-        Axis *_axis[AXIS_MAX];
         Visualize *_vis;
-        ToolHead *_tool;
         Stream *_stream, *_debug;
         StreamNull _null;
         File _file;
@@ -101,20 +100,19 @@ class GCode {
         float _units_to_mm;
         float _feed_rate;
         enum { MODE_SLEEP = 0, MODE_STOP, MODE_ON } _mode;
+        UserInterface *_ui;
+        CNC *_cnc;
     public:
-        GCode(Stream *s, Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t,
-                   Visualize *vis = 0)
+        GCode(Stream *s, CNC *cnc,
+                   UserInterface *ui = 0, Visualize *vis = 0)
         {
+            _ui = ui;
             _vis = vis;
+            _cnc = cnc;
             _positioning = ABSOLUTE;
             _units_to_mm = 1.0;
             _stream = s;
-            _tool = t;
             _feed_rate = 1.0;
-            _axis[AXIS_X] = x;
-            _axis[AXIS_Y] = y;
-            _axis[AXIS_Z] = z;
-            _axis[AXIS_E] = e;
             _offset[AXIS_X] = 0;
             _offset[AXIS_Y] = 0;
             _offset[AXIS_Z] = 0;
@@ -134,20 +132,12 @@ class GCode {
         {
             _stream->println("start");
 
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_disable();
-
             _file = SD.open("start.gco");
             if (_file)
                 _file_enable = true;
         }
 
         void update();
-
-        Axis *axis(int axis)
-        {
-            return _axis[axis];
-        }
 
     private:
         void _block_do(struct gcode_block *blk);

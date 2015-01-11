@@ -138,10 +138,11 @@ class Axis_DCEncoder : public Axis {
             return _mm_to_position;
         }
 
-        virtual void motor_disable()
+        virtual void motor_enable(bool enabled = true)
         {
-            _motor.run(RELEASE);
-            Axis::motor_disable();
+            if (!enabled)
+                _motor.run(RELEASE);
+            Axis::motor_enable(enabled);
         }
 
         virtual void motor_halt()

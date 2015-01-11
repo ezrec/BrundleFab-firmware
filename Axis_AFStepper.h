@@ -111,10 +111,12 @@ class Axis_AFStepper : public Axis {
         {
             return _maxPos;
         }
-        virtual void motor_disable()
+
+        virtual void motor_enable(bool enabled = true)
         {
-            _motor->release();
-            Axis::motor_disable();
+            if (!enabled)
+                _motor->release();
+            Axis::motor_enable(enabled);
         }
 
         virtual bool motor_active()

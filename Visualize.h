@@ -70,26 +70,6 @@ class Visualize {
             _color[VC_BACKGROUND] = 0;
         }
 
-        void begin(float scale = 1.0)
-        {
-            _scale = scale;
-            _gfx->drawRect(_left-1, _top-1, _width+2, _height+2, _color[VC_BORDER]);
-            clear();
-        }
-
-        void begin(float x_mm, float y_mm, float z_mm)
-        {
-            /* Bounding box for the build volume */
-            float scale_y = (float)_height/(z_mm + y_mm/4.0);
-            float scale_x = (float)_width/(x_mm + y_mm/4.0);
-
-            _max[AXIS_X] = x_mm;
-            _max[AXIS_Y] = y_mm;
-            _max[AXIS_Z] = z_mm;
-
-            begin(scale_x > scale_y ? scale_y : scale_x);
-        }
-
         void clear()
         {
             float zero[AXIS_MAX] = {};
@@ -112,6 +92,26 @@ class Visualize {
             line_to(VC_AXIS + AXIS_Y, _max[AXIS_X], _max[AXIS_Y], 0);
             cursor_to(0, 0, _max[AXIS_Z]);
             line_to(VC_AXIS + AXIS_X, _max[AXIS_X], 0, _max[AXIS_Z]);
+        }
+
+        void clear(float scale)
+        {
+            _scale = scale;
+            _gfx->drawRect(_left-1, _top-1, _width+2, _height+2, _color[VC_BORDER]);
+            clear();
+        }
+
+        void clear(float x_mm, float y_mm, float z_mm)
+        {
+            /* Bounding box for the build volume */
+            float scale_y = (float)_height/(z_mm + y_mm/4.0);
+            float scale_x = (float)_width/(x_mm + y_mm/4.0);
+
+            _max[AXIS_X] = x_mm;
+            _max[AXIS_Y] = y_mm;
+            _max[AXIS_Z] = z_mm;
+
+            clear(scale_x > scale_y ? scale_y : scale_x);
         }
 
         void color_set(int color_ndx, uint16_t color)
