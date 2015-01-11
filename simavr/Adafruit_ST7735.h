@@ -51,11 +51,27 @@
 class Adafruit_ST7735 : public Adafruit_GFX {
     private:
         SDL_Surface *_surface;
+        int _lock;
+
+        void _pixel_lock()
+        {
+            if (_lock++ == 0)
+                SDL_LockSurface(_surface);
+        }
+
+        void _pixel_unlock()
+        {
+            if (--_lock == 0) {
+                SDL_UnlockSurface(_surface);
+                SDL_Flip(_surface);
+            }
+        }
 
     public:
         Adafruit_ST7735(int pin_cs, int pin_dc, int pin_rst)
             : Adafruit_GFX(ST7735_TFTWIDTH, ST7735_TFTHEIGHT_18)
         {
+            _lock = 0;
         }
         ~Adafruit_ST7735()
         {
@@ -70,6 +86,7 @@ class Adafruit_ST7735 : public Adafruit_GFX {
             SDL_FillRect(_surface, NULL, SDL_MapRGB(_surface->format, 0xff, 0xff, 0xff));
             SDL_Flip(_surface);
         }
+
         void drawPixel(int16_t x, int16_t y, uint16_t color)
         {
             Uint32 pixel;
@@ -80,11 +97,48 @@ class Adafruit_ST7735 : public Adafruit_GFX {
                     ((color >> 11) << 3) & 0xff,
                     ((color >>  5) << 2) & 0xff,
                     ((color >>  0) << 3) & 0xff);
-            SDL_LockSurface(_surface);
+
+            _pixel_lock();
             ((Uint32 *)_surface->pixels)[y * _surface->w + x] = pixel;
-            SDL_UnlockSurface(_surface);
-            SDL_Flip(_surface);
+            _pixel_unlock();
         }
+
+        void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color)
+        {
+            _pixel_lock();
+            Adafruit_GFX::drawLine(x0, y0, x1, y1, color);
+            _pixel_unlock();
+        }
+
+        void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
+        {
+            _pixel_lock();
+            Adafruit_GFX::drawFastVLine(x, y, h, color);
+            _pixel_unlock();
+        }
+
+        void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
+        {
+            _pixel_lock();
+            Adafruit_GFX::drawFastHLine(x, y, w, color);
+            _pixel_unlock();
+        }
+
+        void drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
+        {
+            _pixel_lock();
+            Adafruit_GFX::drawRect(x, y, w, h, color);
+            _pixel_unlock();
+        }
+
+        virtual size_t write(uint8_t c)
+        {
+            _pixel_lock();
+            Adafruit_GFX::write(c);
+            _pixel_unlock();
+        }
+
+
         void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
         {
             Uint32 pixel = SDL_MapRGB(_surface->format, 
@@ -97,8 +151,9 @@ class Adafruit_ST7735 : public Adafruit_GFX {
             r.y = y;
             r.w = w;
             r.h = h;
+            _pixel_lock();
             SDL_FillRect(_surface, &r, pixel);
-            SDL_Flip(_surface);
+            _pixel_unlock();
         }
 };
 
