@@ -43,6 +43,8 @@ class Visualize {
         /* Location of visualization */
         int _top,_left,_width,_height;
 
+        float _scale;
+
         uint16_t _color[VC_MAX];
 
         struct {
@@ -65,8 +67,9 @@ class Visualize {
             _color[VC_BACKGROUND] = 0;
         }
 
-        void begin()
+        void begin(float scale = 1.0)
         {
+            _scale = scale;
             _gfx->drawRect(_left-1, _top-1, _width+2, _height+2, _color[VC_BORDER]);
             clear();
         }

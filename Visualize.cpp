@@ -197,8 +197,8 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
 
 void Visualize::_flatten(const float *pos, struct point *pt)
 {
-    pt->x = pos[AXIS_X] + pos[AXIS_Y]/4.0;
-    pt->y = _height - (pos[AXIS_Z] + pos[AXIS_Y]/4 + 1);
+    pt->x = (pos[AXIS_X] + pos[AXIS_Y]/4.0) * _scale;
+    pt->y = (_height - 1) - (pos[AXIS_Z] + pos[AXIS_Y]/4) * _scale;
 }
 
 static void fcolor(float *c, uint16_t r5g6b5, float y)
