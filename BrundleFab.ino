@@ -87,7 +87,7 @@ void setup()
     vis.color_set(VC_MOVE, ST7735_CYAN);
     vis.color_set(VC_FEED, ST7735_YELLOW);
     vis.color_set(VC_TOOL, ST7735_WHITE);
-    vis.begin(0.5);
+    vis.begin(175, 260, 175);
 
     axisX.begin();
     axisY.begin();
@@ -115,14 +115,11 @@ void loop()
             tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
             tft.print("XYZE"[i]); tft.print(": ");
             tft.setTextColor(axis->motor_active() ? ST7735_RED : ST7735_WHITE, ST7735_BLACK);
-            tft.print((pos[i] < -99.99) ? -99 : (pos[i] > 999.99 ? 999 : ((int)pos[i])));
-            tft.print(".");
-            tft.print((pos[i] < -99.99) ? 99 : (pos[i] > 999.99 ? 99 : ((int)(pos[i]*100) % 100)));
-            tft.print(" ");
+            tft.print(pos[i], (pos[i] < 0) ? 2 : 3);
         }
-        tft.setCursor(2, 8 * 5 + 2);
+        tft.setCursor(2 + (tft.width()-6*3)/2, 8 * 5 + 2);
         tft.setTextColor(tool ? ST7735_RED : ST7735_WHITE, ST7735_BLACK);
-        tft.print("T: ");tft.print(tool);
+        tft.print("T");tft.print(tool);
     }
 }
 
