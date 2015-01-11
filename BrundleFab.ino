@@ -38,10 +38,6 @@ Adafruit_MotorShield AFMS;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
-#ifndef AXIS_NULL
-#define AXIS_NULL
-#endif
-
 ToolHead tools;
 ToolInk toolInk_Black;
 ToolFuser toolFuser = ToolFuser(FUSER_ENABLE);
@@ -91,7 +87,7 @@ void setup()
     vis.color_set(VC_MOVE, ST7735_CYAN);
     vis.color_set(VC_FEED, ST7735_YELLOW);
     vis.color_set(VC_TOOL, ST7735_WHITE);
-    vis.begin();
+    vis.begin(0.5);
 
     axisX.begin();
     axisY.begin();
