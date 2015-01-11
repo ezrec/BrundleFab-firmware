@@ -56,6 +56,9 @@ void setup()
     AFMS.begin(1000);
     SD.begin(SD_CS);
 
+    toolInk_Black.begin();
+    toolFuser.begin();
+
     tools.attach(TOOL_INK_BLACK, &toolInk_Black);
     tools.attach(TOOL_FUSER, &toolFuser);
     tools.begin();

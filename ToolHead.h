@@ -68,9 +68,7 @@ class ToolHead : Tool {
 
         virtual void begin()
         {
-            for (int i = 0; i < _tools; i++) {
-                _map[i].tool->begin();
-            }
+            select(0);
         }
 
         virtual bool select(int tool)
