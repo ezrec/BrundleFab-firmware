@@ -135,11 +135,12 @@ public:
   }
   operator bool()
   {
-    return (_file == NULL) ? false : true;
+    return (_file == NULL && _dir == NULL) ? false : true;
   }
   char * name()
   {
-    return _name;
+    char *cp = strrchr(_name, '/');
+    return cp ? (cp+1) : _name;
   }
 
   boolean isDirectory(void)
