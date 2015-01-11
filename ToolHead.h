@@ -43,6 +43,7 @@ class ToolHead : Tool {
         {
             _map[0].id = 0;
             _map[0].tool = &_tool_null;
+            _tools = 1;
             _id = _map[0].id;
             _tool = _map[0].tool;
         }
