@@ -23,23 +23,23 @@
 
 static void _line_reset(struct gcode_line *line)
 {
+    line->buff[line->len] = 0;
     line->len = 0;
 }
 
 static bool _line_update(struct gcode_line *line, char c)
 {
-    if (line->len >= (GCODE_LINE_MAX - 1))
-        return false;
-
-    if (line->len == 0 &&  isspace(c))
-        return false;
-
-    if (c == '\n' || c == '\r') {
-        line->buff[line->len] = 0;
+    if (c == '\n' || c == '\r')
         return true;
-    }
 
-    line->buff[line->len++] = c;
+    if (line->len >= GCODE_LINE_MAX)
+        return false;
+
+    if (line->buff[line->len] != ';') {
+        line->buff[line->len] = c;
+        if (c != ';')
+            line->len++;
+    }
 
     return false;
 }
@@ -49,32 +49,30 @@ static bool _line_update(struct gcode_line *line, char c)
  */
 bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 {
-    char *cp, *is_cs = NULL;
     uint8_t cs = 0;
     enum { INVALID, INTEGER, FLOAT, FLOAT_FRAC, FILENAME } mode = INVALID;
     union {
         float *fptr;
         int *iptr;
     } data;
-    int i, ipart = 0, fpart = 0, fbase = 0;
+    int is_cs = 0, i, ipart = 0, fpart = 0, fbase = 0;
     int neg = 1;
     struct gcode_block state = { 0 };
 
     data.fptr = NULL;
 
-    for (cp = line->buff; *cp; cp++) {
-        if (*cp == ';')
-            break;
+    for (i = 0; i < line->len; i++) {
+        char c = line->buff[i];
 
-        if (*cp == '*') {
-            is_cs = (cp+1);
+        if (c == '*') {
+            is_cs = i + 1;
             break;
         }
 
-        cs ^= *cp;
+        cs ^= c;
 
         if (mode == FILENAME) {
-            if (isspace(*cp)) {
+            if (isspace(c)) {
                 if (ipart > 0) {
                     state.filename[ipart] = 0;
                     mode = INVALID;
@@ -83,30 +81,30 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
                     continue;
             }
             if (ipart < (int)sizeof(state.filename)-1) {
-                state.filename[ipart++] = *cp;
+                state.filename[ipart++] = c;
                 continue;
             }
         } else {
-            if (mode == FLOAT && *cp == '.') {
+            if (mode == FLOAT && c == '.') {
                 fbase = 1;
                 fpart = 0;
                 mode = FLOAT_FRAC;
                 continue;
             }
            
-            if (*cp == '-') {
+            if (c == '-') {
                 neg *= -1;
                 continue;
             }
 
-            if (isdigit(*cp)) {
+            if (isdigit(c)) {
                 if (mode == INTEGER || mode == FLOAT) {
                     ipart *= 10;
-                    ipart += *cp - '0';
+                    ipart += c - '0';
                 } else if (mode == FLOAT_FRAC) {
                     fpart *= 10;
                     fbase *= 10;
-                    fpart += *cp - '0';
+                    fpart += c - '0';
                 }
                 continue;
             }
@@ -147,10 +145,10 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
             }
         }
                 
-        if (isspace(*cp))
+        if (isspace(c))
             continue;
 
-        switch (*cp) {
+        switch (c) {
         case 'N':
             mode = INTEGER;
             data.iptr = &state.num;
@@ -159,7 +157,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         case 'M':
         case 'T':
             mode = INTEGER;
-            state.code = *cp;
+            state.code = c;
             data.iptr = &state.cmd;
             break;
         case 'I':
@@ -254,14 +252,15 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
         break;
     }
 
-    if (is_cs) {
+    if (is_cs > 0) {
         int xcs = 0;
-        while (*is_cs && isdigit(*is_cs) && xcs < 256) {
+        while ((is_cs < line->len) && isdigit(line->buff[is_cs]) && xcs < 256) {
             xcs *= 10;
-            xcs += *(is_cs++) - '0';
+            xcs += line->buff[is_cs++] - '0';
         }
         if (xcs != cs) {
             state.cmd = state.code = 0;
+            _line_reset(line);
             return false;
         }
     }

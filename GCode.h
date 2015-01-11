@@ -34,7 +34,7 @@
 #define DEBUG_INFO      (1 << 1)
 #define DEBUG_ERR       (1 << 2)
 
-#define GCODE_LINE_MAX  128
+#define GCODE_LINE_MAX  255
 #define GCODE_QUEUE_MAX 4
 
 struct gcode_parameter {
@@ -75,7 +75,6 @@ struct gcode_block {
 
 struct gcode_line {
     uint8_t len;
-    uint8_t cs;
     char buff[GCODE_LINE_MAX];
 };
 
