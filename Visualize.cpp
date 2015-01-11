@@ -40,15 +40,15 @@ const int LEFT = 1;   // 0001
 const int RIGHT = 2;  // 0010
 const int BOTTOM = 4; // 0100
 const int TOP = 8;    // 1000
- 
+
 // Compute the bit code for a point (x, y) using the clip rectangle
 // bounded diagonally by (0, 0), and (_width, _height)
 static int ComputeOutCode(int x, int y, int w, int h)
 {
     int code;
- 
+
     code = INSIDE;          // initialised as being inside of clip window
- 
+
     if (x < 0)           // to the left of clip window
         code |= LEFT;
     else if (x > w)      // to the right of clip window
@@ -57,7 +57,7 @@ static int ComputeOutCode(int x, int y, int w, int h)
         code |= BOTTOM;
     else if (y > h)      // above the clip window
         code |= TOP;
- 
+
     return code;
 }
 
@@ -69,7 +69,7 @@ static uint16_t r5g6b5(const float *color_a, const float *cinc, int pixel)
 }
 
 // Cohen–Sutherland clipping algorithm clips a line from
-// P0 = (x0, y0) to P1 = (x1, y1) against a rectangle with 
+// P0 = (x0, y0) to P1 = (x1, y1) against a rectangle with
 // diagonal from (0, 0) to (_width, _height).
 void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
                                 const float *color_b, const struct point *b)
@@ -85,7 +85,7 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
     int outcode0 = ComputeOutCode(x0, y0, _width, _height);
     int outcode1 = ComputeOutCode(x1, y1, _width, _height);
     bool accept = false;
- 
+
     while (true) {
         if (!(outcode0 | outcode1)) { // Bitwise OR is 0. Trivially accept and get out of loop
             accept = true;
@@ -96,10 +96,10 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
             // failed both tests, so calculate the line segment to clip
             // from an outside point to an intersection with clip edge
             int x = 0, y = 0;
- 
+
             // At least one endpoint is outside the clip rectangle; pick it.
             int outcodeOut = outcode0 ? outcode0 : outcode1;
- 
+
             // Now find the intersection point;
             // use formulas y = y0 + slope * (x - x0), x = x0 + (1 / slope) * (y - y0)
             if (outcodeOut & TOP) {           // point is above the clip rectangle
@@ -115,7 +115,7 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
                 y = y0 + (y1 - y0) * ( - x0) / (x1 - x0);
                 x = 0;
             }
- 
+
             // Now we move outside point to intersection point to clip
             // and get ready for next pass.
             if (outcodeOut == outcode0) {
@@ -138,7 +138,7 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
     // if x0 == x1, then it does not matter what we set here
     signed char const ix((delta_x > 0) - (delta_x < 0));
     delta_x = abs(delta_x) << 1;
- 
+
     int delta_y(y1 - y0);
     // if y0 == y1, then it does not matter what we set here
     signed char const iy((delta_y > 0) - (delta_y < 0));
@@ -150,14 +150,14 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
 
     for (int i = 0; i < 3; i++)
         cinc[i] = (color_b[i] - color_a[i])/dist;
- 
+
     _gfx->drawPixel(_left + x0, _top + y0, r5g6b5(color_a, cinc, pixel++));
- 
+
     if (delta_x >= delta_y)
     {
         // error may go below zero
         int error(delta_y - (delta_x >> 1));
- 
+
         while (x0 != x1)
         {
             if ((error >= 0) && (error || (ix > 0)))
@@ -166,10 +166,10 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
                 y0 += iy;
             }
             // else do nothing
- 
+
             error += delta_y;
             x0 += ix;
- 
+
             _gfx->drawPixel(_left + x0, _top + y0, r5g6b5(color_a, cinc, pixel++));
         }
     }
@@ -177,7 +177,7 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
     {
         // error may go below zero
         int error(delta_x - (delta_y >> 1));
- 
+
         while (y0 != y1)
         {
             if ((error >= 0) && (error || (iy > 0)))
@@ -186,10 +186,10 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
                 x0 += ix;
             }
             // else do nothing
- 
+
             error += delta_x;
             y0 += iy;
- 
+
             _gfx->drawPixel(_left + x0, _top + y0, r5g6b5(color_a, cinc, pixel++));
         }
     }
