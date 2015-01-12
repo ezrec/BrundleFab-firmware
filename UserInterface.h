@@ -44,15 +44,12 @@ class UserInterface;
 
 class Menu {
     public:
-        Menu *parent;
-
-    public:
         Menu() { }
         virtual void begin(UserInterface *ui) = 0;
         virtual Menu *update(UserInterface *ui, unsigned long now, enum ui_key key = UI_KEY_NONE) = 0;
 };
 
-class MainMenu : public Menu {
+class MenuMain : public Menu {
     private:
         struct {
             bool enable;
@@ -64,7 +61,7 @@ class MainMenu : public Menu {
         virtual Menu *update(UserInterface *ui, unsigned long now, enum ui_key key = UI_KEY_NONE);
 };
 
-extern MainMenu UserInterfaceMainMenu;
+extern MenuMain UserInterfaceMenuMain;
 
 class UserInterface : public Adafruit_GFX {
     private:
@@ -131,10 +128,12 @@ class UserInterface : public Adafruit_GFX {
 
         void begin()
         {
-            _menu = &UserInterfaceMainMenu;
+            _menu = &UserInterfaceMenuMain;
             _menu->begin(this);
             _update_time = millis();
         }
+
+        void clear(const char *title);
 
         void status_set(const char *message)
         {
