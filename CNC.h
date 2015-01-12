@@ -82,7 +82,7 @@ class CNC {
 
         bool update()
         {
-            bool motion;
+            bool motion = false;
 
             for (int i = 0; i < AXIS_MAX; i++)
                 motion |= _axis[i]->update();

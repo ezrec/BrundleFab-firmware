@@ -15,6 +15,7 @@
  *
  */
 
+#include <Arduino.h>
 #include <Wire.h>
 #include <SD.h>
 
