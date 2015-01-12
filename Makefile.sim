@@ -15,43 +15,50 @@
 #
 MKDIR ?= mkdir -p
 
-.PRECIOUS := build-host/%.cpp
+O ?= build-host
+
+.PRECIOUS := $(O)/%.cpp
 .SUFFIXES := .cpp .o .ino
 
-all: BrundleFab
+TARGETS := $(patsubst %.ino,$(O)/%,$(wildcard *.ino))
+
+all: deps $(TARGETS)
 
 clean:
-	rm -rf build-host BrundleFab
+	rm -rf $(O)/*.o $(O)/*.dep $(TARGETS)
 
 CXXFLAGS = -g3 -I. -Isimavr -I/usr/include/SDL \
 	   -Wall -Werror \
 	   -DAXIS_NULL 
 
-SRCS = simavr/main.cpp \
-       simavr/Arduino.cpp \
-       simavr/WString.cpp \
-       simavr/Print.cpp \
-       simavr/Encoder.cpp \
-       simavr/Stream.cpp \
-       simavr/Adafruit_GFX.cpp \
-       GCode.cpp \
-       ToolInk.cpp \
-       Visualize.cpp
+SRCS := $(wildcard simavr/*.cpp) \
+        $(wildcard *.cpp)
 
-OBJS = $(SRCS:%.cpp=build-host/%.o)
+OBJS = $(SRCS:%.cpp=$(O)/%.o)
 
--include $(OBJS:.o=.d)
+DEPS := $(OBJS:.o=.dep) $(TARGETS:%=%.dep)
 
-build-host/%.cpp: %.ino
+deps: $(DEPS)
+	
+-include $(DEPS)
+
+$(O)/%.o: %.ino
 	$(MKDIR) $(dir $@)
-	cp $< $@
+	$(CXX) -x c++ -c -o $@ $< $(CXXFLAGS)
 
-build-host/%.o: %.cpp
+$(O)/%.dep: %.ino
+	$(MKDIR) $(dir $@)
+	$(CXX) -x c++ -MM -MT $(O)/$*.o $(CFLAGS) $< >$@
+
+$(O)/%.o: %.cpp
 	$(MKDIR) $(dir $@)
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
-	$(CXX) -MM $(CFLAGS) $< >build-host/$*.d
 
-%: build-host/%.cpp $(OBJS)
+$(O)/%.dep: %.cpp
+	$(MKDIR) $(dir $@)
+	$(CXX) -MM -MT $(O)/$*.o $(CFLAGS) $< >$@
+
+$(O)/%: $(O)/%.o $(OBJS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) -lSDL
 
 # vim: set shiftwidth=8 noexpandtab:
