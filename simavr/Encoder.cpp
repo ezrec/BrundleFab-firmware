@@ -99,7 +99,6 @@ int32_t encoder_get(int n)
 
 void encoder_speed(int n, float speed)
 {
-    int dir = _encoder[n].dir;
     unsigned long now = micros();
 
     _encoder[n].position = encoder_position(n, now);

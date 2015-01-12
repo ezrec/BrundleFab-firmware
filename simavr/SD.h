@@ -181,6 +181,7 @@ public:
   // before other methods are used.
   boolean begin(uint8_t csPin = SD_CHIP_SELECT_PIN)
   {
+    return true;
   }
   
   // Open the specified file/directory with the supplied mode (e.g. read or

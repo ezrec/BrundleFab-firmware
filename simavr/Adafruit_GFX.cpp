@@ -417,9 +417,7 @@ size_t Adafruit_GFX::write(uint8_t c) {
       cursor_x = 0;
     }
   }
-#if ARDUINO >= 100
   return 1;
-#endif
 }
 
 // Draw a character

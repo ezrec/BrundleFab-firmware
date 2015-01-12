@@ -133,9 +133,11 @@ class Adafruit_ST7735 : public Adafruit_GFX {
 
         virtual size_t write(uint8_t c)
         {
+            size_t res;
             _pixel_lock();
-            Adafruit_GFX::write(c);
+            res = Adafruit_GFX::write(c);
             _pixel_unlock();
+            return res;
         }
 
 

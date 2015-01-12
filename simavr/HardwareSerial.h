@@ -97,7 +97,7 @@ class HardwareSerial : public Stream
     virtual void flush(void) { }
     virtual size_t write(uint8_t c)
     {
-      ::write(_io, &c, 1);
+      return ::write(_io, &c, 1);
     }
     inline size_t write(unsigned long n) { return write((uint8_t)n); }
     inline size_t write(long n) { return write((uint8_t)n); }

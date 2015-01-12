@@ -21,10 +21,11 @@ MKDIR ?= mkdir -p
 all: BrundleFab
 
 clean:
-	rm -rf build-host
+	rm -rf build-host BrundleFab
 
 CXXFLAGS = -g3 -I. -Isimavr -I/usr/include/SDL \
-	   -DAXIS_NULL
+	   -Wall -Werror \
+	   -DAXIS_NULL 
 
 SRCS = simavr/main.cpp \
        simavr/Arduino.cpp \
@@ -39,16 +40,16 @@ SRCS = simavr/main.cpp \
 
 OBJS = $(SRCS:%.cpp=build-host/%.o)
 
-build-host/%.cpp: %.ino Makefile.sim
+-include $(OBJS:.o=.d)
+
+build-host/%.cpp: %.ino
 	$(MKDIR) $(dir $@)
-	echo '#include <Arduino.h>' >$@
-	echo '#include <HardwareSerial.h>' >>$@
-	echo '#include <SD.h>' >$@
-	cat $< >>$@
+	cp $< $@
 
 build-host/%.o: %.cpp
 	$(MKDIR) $(dir $@)
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
+	$(CXX) -MM $(CFLAGS) $< >build-host/$*.d
 
 %: build-host/%.cpp $(OBJS)
 	$(CXX) -o $@ $^ $(CXXFLAGS) -lSDL

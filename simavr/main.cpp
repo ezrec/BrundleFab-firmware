@@ -47,6 +47,7 @@ int main(int argc, char **argv)
                 case SDLK_LEFT:  analogWrite(4, 630); break;
 
                 case SDLK_ESCAPE: dead = true; break;
+                default: break;
                 }
             } else if (ev.type == SDL_KEYUP) {
                 analogWrite(4, 700);

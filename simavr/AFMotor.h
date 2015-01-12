@@ -92,7 +92,11 @@ class AF_Stepper {
   AF_Stepper(uint16_t, uint8_t) {}
   void step(uint16_t steps, uint8_t dir,  uint8_t style = SINGLE) {}
   void setSpeed(uint16_t) {}
-  uint8_t onestep(uint8_t dir, uint8_t style) {}
+  uint8_t onestep(uint8_t dir, uint8_t style)
+  { return (style == SINGLE) ? MICROSTEPS : 
+           (style == DOUBLE) ? MICROSTEPS/2 :
+           1;
+  }
   void release(void) {}
   uint16_t revsteps; // # steps per revolution
   uint8_t steppernum;
