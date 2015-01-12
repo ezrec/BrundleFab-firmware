@@ -30,6 +30,8 @@
 
 #define TFT_INITR               INITR_BLACKTAB
 
+#define JOY_PIN                 4       /* A4 */
+
 #define SD_CS                   53      /* D53 aka SS_PIN */
 
 #define X_MOTOR                 3       /* AFMotor M3 */

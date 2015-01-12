@@ -35,6 +35,8 @@
 
 #include "Visualize.h"
 
+#include "Adafruit_Joystick.h"
+
 Adafruit_MotorShield AFMS;
 
 Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
@@ -63,6 +65,8 @@ UserInterface ui = UserInterface(&cnc, &tft, ST7735_TFTWIDTH, 5*8, 0, 0);
 
 GCode gcode = GCode(&Serial, &cnc, &ui, &vis);
 
+Adafruit_Joystick joy = Adafruit_Joystick(JOY_PIN);
+
 void setup()
 {
     Serial.begin(115200);
@@ -78,9 +82,9 @@ void setup()
 
     tft.initR(TFT_INITR);
 
-    ui.color_set(UC_BACKGROUND, ST7735_WHITE);
-    ui.color_set(UC_TEXT, ST7735_BLACK);
-    ui.color_set(UC_STATUS, ST7735_RED);
+    ui.color_set(UI_COLOR_BACKGROUND, ST7735_WHITE);
+    ui.color_set(UI_COLOR_TEXT, ST7735_BLACK);
+    ui.color_set(UI_COLOR_STATUS, ST7735_RED);
     ui.begin();
 
     vis.color_set(VC_AXIS + AXIS_X, ST7735_RED);
@@ -101,11 +105,34 @@ void setup()
 
 static unsigned long next_update = millis();
 
+static enum ui_key keymap(int joy)
+{
+    static int last_joy = AFJOYSTICK_NONE;
+
+    if (joy == last_joy)
+        return UI_KEY_NONE;
+
+    last_joy = joy;
+
+    switch (joy) {
+    case AFJOYSTICK_DOWN:   return UI_KEY_DOWN;
+    case AFJOYSTICK_UP:     return UI_KEY_UP;
+    case AFJOYSTICK_LEFT:   return UI_KEY_LEFT;
+    case AFJOYSTICK_RIGHT:  return UI_KEY_RIGHT;
+    case AFJOYSTICK_SELECT: return UI_KEY_SELECT;
+    }
+
+    return UI_KEY_NONE;
+}
+
 void loop()
 {
+    enum ui_key key;
+
     gcode.update();
 
-    ui.update();
+    key = keymap(joy.read());
+    ui.update(key);
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

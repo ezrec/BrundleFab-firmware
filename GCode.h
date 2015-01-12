@@ -39,6 +39,16 @@
 #define GCODE_LINE_MAX  255
 #define GCODE_QUEUE_MAX 4
 
+struct gcode_line {
+    uint8_t len;
+    char buff[GCODE_LINE_MAX];
+};
+
+struct gcode_io {
+    struct gcode_line line;
+    Stream *in, *out;
+};
+
 struct gcode_parameter {
     char label;
     float value;
@@ -57,6 +67,7 @@ struct gcode_parameter {
 
 struct gcode_block {
     struct gcode_block *next;
+    struct gcode_io *io;
 
     bool buffered;
     char code;
@@ -75,11 +86,6 @@ struct gcode_block {
     char string[PATH_MAX];    /* For M20, M28, M29, M30, M32, M36, M117 */
 };
 
-struct gcode_line {
-    uint8_t len;
-    char buff[GCODE_LINE_MAX];
-};
-
 class GCode {
     private:
         Visualize *_vis;
@@ -89,7 +95,7 @@ class GCode {
         bool _file_enable;
         float _offset[AXIS_MAX];
 
-        struct gcode_line _stream_line, _file_line;
+        struct gcode_io _console, _program;
         struct {
             struct gcode_block ring[GCODE_QUEUE_MAX];
             struct gcode_block *free;
@@ -99,7 +105,7 @@ class GCode {
         enum { ABSOLUTE = 0, RELATIVE } _positioning;
         float _units_to_mm;
         float _feed_rate;
-        enum { MODE_SLEEP = 0, MODE_STOP, MODE_ON } _mode;
+        enum { MODE_HALT = 0, MODE_PAUSE, MODE_RUN } _mode;
         UserInterface *_ui;
         CNC *_cnc;
     public:
@@ -126,22 +132,48 @@ class GCode {
 
             _block.free = &_block.ring[0];
             _block.pending_tail = &_block.pending;
+
+            _mode = MODE_RUN;
         }
 
         void begin()
         {
-            _stream->println("start");
+            _console.in = _stream;
+            _console.out = _stream;
+
+            _console.out->println("start");
 
             _file = SD.open("start.gco");
-            if (_file)
-                _file_enable = true;
+            _program.in = &_file;
+            _program.out = &_null;
         }
 
         void update();
 
+        void pause(bool check_switch = false)
+        {
+            if (check_switch && _ui)
+                if (_ui->cnc_switch(UI_SWITCH_OPTIONAL_STOP) == 0)
+                    return;
+
+            _mode = MODE_PAUSE;
+            if (_ui)
+                _ui->on_pause();
+        }
+
+        void run()
+        {
+            if (_mode == MODE_PAUSE) {
+                if (_ui)
+                    _ui->on_run();
+                _mode = MODE_RUN;
+            }
+        }
+
     private:
         void _block_do(struct gcode_block *blk);
         bool _line_parse(struct gcode_line *line, struct gcode_block *blk);
+        void _process_io(struct gcode_io *io);
         void _process_block(struct gcode_block *blk);
 };
 

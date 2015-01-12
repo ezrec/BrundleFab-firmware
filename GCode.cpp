@@ -344,6 +344,7 @@ void GCode::_block_do(struct gcode_block *blk)
 {
     float dist, time;
     File tmp_file;
+    Stream *out = blk->io->out;
 
     switch (blk->code) {
     case 'T':
@@ -446,13 +447,11 @@ void GCode::_block_do(struct gcode_block *blk)
         break;
     case 'M':
         switch (blk->cmd) {
-        case 0: /* M0 - Stop */
-            _mode = MODE_STOP;
-            _cnc->stop();
+        case 0: /* M0 - Stop, regardless of optional stop switch */
+            pause(false);
             break;
-        case 1: /* M1 - Sleep */
-            _mode = MODE_SLEEP;
-            _cnc->sleep();
+        case 1: /* M1 - Stop, only if optional stop switch set */
+            pause(true);
             break;
         case 17: /* M17 - Enable motors */
             _cnc->motor_enable();
@@ -461,7 +460,7 @@ void GCode::_block_do(struct gcode_block *blk)
             _cnc->motor_disable();
             break;
         case 20: /* M20 - List SD files */
-            _stream->print(" Files: {");
+            out->print(" Files: {");
             if (blk->update_mask & GCODE_UPDATE_STRING)
                 tmp_file = SD.open(blk->string);
             else
@@ -476,11 +475,11 @@ void GCode::_block_do(struct gcode_block *blk)
                         continue;
                     if (strcmp(entry.name(), "..") == 0)
                         continue;
-                    _stream->print(entry.name());
-                    _stream->print(",");
+                    out->print(entry.name());
+                    out->print(",");
                 }
             }
-            _stream->print("}");
+            out->print("}");
             break;
         case 23: /* M23 - Select SD file */
             _file = SD.open(blk->string);
@@ -497,12 +496,12 @@ void GCode::_block_do(struct gcode_block *blk)
             break;
         case 27: /* M27 - Show SD position */
             if (_file) {
-                _stream->print(" SD printing byte ");
-                _stream->print(_file.position());
-                _stream->print("/");
-                _stream->print(_file.size());
+                out->print(" SD printing byte ");
+                out->print(_file.position());
+                out->print("/");
+                out->print(_file.size());
             } else {
-                _stream->print(" Not SD printing");
+                out->print(" Not SD printing");
             }
             break;
         case 30: /* M30 - Delete file from SD */
@@ -514,47 +513,47 @@ void GCode::_block_do(struct gcode_block *blk)
             break;
         case 36: /* M36 - Return file information */
             tmp_file = SD.open(blk->string);
-            _stream->print(" {\"err\":");
+            out->print(" {\"err\":");
             if (tmp_file) {
-                _stream->print("0,\"size\":");
-                _stream->print(tmp_file.size());
-                _stream->print("}");
+                out->print("0,\"size\":");
+                out->print(tmp_file.size());
+                out->print("}");
                 tmp_file.close();
             } else {
-                _stream->print("1}");
+                out->print("1}");
             }
             break;
         case 111: /* M111 - Set debug */
             if (blk->update_mask & GCODE_UPDATE_S) {
                 int s = (int)blk->s;
                 if (s & DEBUG_ECHO)
-                    _debug = _stream;
+                    _debug = out;
                 else
                     _debug = &_null;
             }
             break;
         case 114: /* M114 - Get current position */
-            _stream->print(" C: X:");
-            _stream->print((float)_cnc->axis(AXIS_X)->position_get_mm()/
+            out->print(" C: X:");
+            out->print((float)_cnc->axis(AXIS_X)->position_get_mm()/
                                   _units_to_mm);
-            _stream->print(" Y:");
-            _stream->print((float)_cnc->axis(AXIS_Y)->position_get_mm()/
+            out->print(" Y:");
+            out->print((float)_cnc->axis(AXIS_Y)->position_get_mm()/
                                   _units_to_mm);
-            _stream->print(" Z:");
-            _stream->print((float)_cnc->axis(AXIS_Z)->position_get_mm()/
+            out->print(" Z:");
+            out->print((float)_cnc->axis(AXIS_Z)->position_get_mm()/
                                   _units_to_mm);
-            _stream->print(" E:");
-            _stream->print((float)_cnc->axis(AXIS_E)->position_get_mm()/
+            out->print(" E:");
+            out->print((float)_cnc->axis(AXIS_E)->position_get_mm()/
                                   _units_to_mm);
             break;
         case 115: /* M115 - Get firmware version */
-            _stream->print(" FIRMWARE_NAME:BrundleFab");
+            out->print(" FIRMWARE_NAME:BrundleFab");
             break;
         case 117:
-            _stream->print(" ");
-            _stream->print(blk->string);
+            out->print(" ");
+            out->print(blk->string);
             if (_ui)
-                _ui->status(blk->string);
+                _ui->status_set(blk->string);
             break;
         case 124: /* M124 - Immediate motor stop */
             _cnc->stop();
@@ -570,7 +569,6 @@ void GCode::_block_do(struct gcode_block *blk)
 
 void GCode::update()
 {
-    struct gcode_block *blk;
     bool motion = false;
 
     motion = _cnc->update();
@@ -592,44 +590,66 @@ void GCode::update()
         }
     }
 
-    blk = _block.free;
-    if (!blk) {
-        return;
-    }
-
-    /* Serial input is of higher priority than SD input */
-    if (_stream->available()) {
-        char c = _stream->read();
-        if (_stream_line.len == 0)
-            _debug->print("// ");
-        _debug->print(c);
-        if (c == '\r')
-            _debug->print('\n');
-        if (_line_update(&_stream_line, c)) {
-            if (_mode == MODE_STOP) {
-                _stream->println("!!");
-            } else if (_line_parse(&_stream_line, blk)) {
-                _stream->print("ok");
-                _process_block(blk);
-                _stream->println();
-                return;
-            } else {
-                _stream->print("rs");
-                _stream->println(blk->num);
-            }
-        }
-    }
-
-    if (_file_enable && _file && _file.available()) {
-        char c = _file.read();
-        if (_line_update(&_file_line, c) &&
-            _line_parse(&_file_line, blk)) {
-            _process_block(blk);
+    /* If paused, wait for the Cycle Start button to be pressed
+     */
+    if (_mode == MODE_PAUSE) {
+        if (_ui && _ui->cnc_button(UI_BUTTON_CYCLE_START)) {
+            _mode = MODE_RUN;
+        } else {
             return;
         }
     }
 
-    return;
+    /* Serial input is of higher priority than SD input */
+    _process_io(&_console);
+
+    _process_io(&_program);
+}
+
+void GCode::_process_io(struct gcode_io *io)
+{
+    struct gcode_block *blk;
+    
+    blk = _block.free;
+
+    if (!blk)
+        return;
+
+    if (io->in->available()) {
+        char c;
+        
+        if (io->line.len == 0)
+            _debug->print("// ");
+
+        c = io->in->read();
+
+        if (c == '\r')
+            return;
+
+        if (c == '\n')
+            _debug->println();
+        else
+            _debug->print(c);
+
+        if (_line_update(&io->line, c)) {
+            if (_mode == MODE_HALT) {
+                io->out->println("!!");
+            } else if (_line_parse(&io->line, blk)) {
+                io->out->print("ok");
+
+                blk->io = io;
+
+                _process_block(blk);
+
+                io->out->println();
+            } else {
+
+                io->out->print("rs");
+
+                io->out->println(blk->num);
+            }
+        }
+    }
 }
 
 void GCode::_process_block(struct gcode_block *blk)
@@ -637,13 +657,8 @@ void GCode::_process_block(struct gcode_block *blk)
     /* Special case: M112 Emergency stop */
     if (blk->code == 'M' && blk->cmd == 112) {
         _cnc->motor_disable();
-        _mode = MODE_STOP;
+        _mode = MODE_HALT;
         return;
-    }
-
-    if (_mode == MODE_SLEEP) {
-        _cnc->motor_enable();
-        _mode = MODE_ON;
     }
 
     if (blk->buffered) {
