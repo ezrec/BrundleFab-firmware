@@ -144,6 +144,10 @@ class GCode {
             _console.out->println("start");
 
             _file = SD.open("start.gco");
+            _file_enable = _file;
+            if (_file_enable)
+                _ui->message_set(_file.name());
+
             _program.in = &_file;
             _program.out = &_null;
         }

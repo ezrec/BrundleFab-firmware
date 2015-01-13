@@ -40,7 +40,9 @@ static void axis_report(UserInterface *ui, int x, int y, int sel_axis = -1)
     int tool = ui->cnc()->toolhead()->selected();
     ui->setCursor(x, y);
     ui->setTextColor(tool ? st : fg, bg);
-    ui->print("T");ui->print(tool);
+    ui->print("T");
+    ui->print(tool);
+    ui->print("  ");
 
     for (int i = 0; i < AXIS_MAX; i++) {
         Axis *axis = ui->cnc()->axis(i);
@@ -175,7 +177,7 @@ void MenuMain::begin(UserInterface *ui)
 
 Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
 {
-    uint16_t bg, st;
+    uint16_t bg, fg, st;
     const char *status;
 
     if (key != UI_KEY_NONE) {
@@ -191,8 +193,12 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
     }
 
     bg = ui->color(UI_COLOR_BACKGROUND);
+    fg = ui->color(UI_COLOR_TEXT);
     st = ui->color(UI_COLOR_STATUS);
   
+    bool updated;
+    const char *message = ui->message(&updated);
+
     status = ui->status();
     if (!_status.enable && status) {
         _status.enable = true;
@@ -201,8 +207,10 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
     } else if (_status.enable && !status) {
         ui->fillRect(0, 8, ui->width(), 8, bg);
         _status.enable = false;
+        updated = true;
     }
     
+    ui->setTextWrap(false);
     if (_status.enable && _status.time <= now) {
         uint16_t c1, c2;
         if (_status.blink) {
@@ -214,11 +222,19 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
         }
         ui->fillRect(0, 8, ui->width(), 8, c2);
         ui->setCursor(0, 8);
-        ui->setTextWrap(false);
         ui->setTextColor(c1, c2);
         ui->print(status);
         _status.blink = !_status.blink;
         _status.time = now + 500;
+    }
+
+    if (!now || updated) {
+        ui->fillRect(0, 8, ui->width(), 8, bg);
+        if (message) {
+            ui->setCursor(0, 8);
+            ui->setTextColor(fg, bg);
+            ui->print(message);
+        }
     }
 
     axis_report(ui, 0, 2*8);

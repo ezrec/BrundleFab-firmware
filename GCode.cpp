@@ -486,9 +486,15 @@ void GCode::_block_do(struct gcode_block *blk)
             break;
         case 24: /* M24 - Start SD print */
             _file_enable = true;
+            if (_file) {
+                _ui->status_set(NULL);
+                _ui->message_set(_file.name());
+            }
             break;
         case 25: /* M25 - Pause SD print */
             _file_enable = false;
+            if (_file)
+                _ui->status_set(_file.name());
             break;
         case 26: /* M26 - Set SD position */
             if (_file)
@@ -510,6 +516,10 @@ void GCode::_block_do(struct gcode_block *blk)
         case 32: /* M32 - Select SD file, and print */
             _file = SD.open(blk->string);
             _file_enable = true;
+            if (_file) {
+                _ui->status_set(NULL);
+                _ui->message_set(_file.name());
+            }
             break;
         case 36: /* M36 - Return file information */
             tmp_file = SD.open(blk->string);

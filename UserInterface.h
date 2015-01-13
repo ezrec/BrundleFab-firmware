@@ -29,12 +29,13 @@ enum ui_key {
     UI_KEY_LEFT, UI_KEY_RIGHT
 };
 
-#define UI_STATUS_MAX   64
+#define UI_STATUS_MAX           32
+#define UI_MESSAGE_MAX          32
 
-#define UI_COLOR_BACKGROUND   0
-#define UI_COLOR_TEXT         1
-#define UI_COLOR_STATUS       2
-#define UI_COLOR_MAX          3
+#define UI_COLOR_BACKGROUND     0
+#define UI_COLOR_TEXT           1
+#define UI_COLOR_STATUS         2
+#define UI_COLOR_MAX            3
 
 #define UI_SWITCH_OPTIONAL_STOP 0
 
@@ -79,6 +80,8 @@ class UserInterface : public Adafruit_GFX {
         unsigned long _update_time;
 
         char _status[UI_STATUS_MAX];
+        char _message[UI_MESSAGE_MAX];
+        bool _message_updated;
 
         bool _paused;
 
@@ -130,6 +133,7 @@ class UserInterface : public Adafruit_GFX {
         {
             _menu = &UserInterfaceMenuMain;
             _menu->begin(this);
+            _menu->update(this, 0);
             _update_time = millis();
         }
 
@@ -149,15 +153,37 @@ class UserInterface : public Adafruit_GFX {
             return _status[0] ? _status : NULL;
         }
 
-        void update(enum ui_key key = UI_KEY_NONE)
+        void message_set(const char *message)
+        {
+            if (!message || message[0] == 0) {
+                _message[0] = 0;
+            } else {
+                strncpy(_message, message, UI_STATUS_MAX);
+            }
+            _message_updated = true;
+        }
+
+        const char *message(bool *updated = NULL)
+        {
+            if (updated) {
+                *updated = _message_updated;
+                _message_updated = false;
+            }
+
+            return _message[0] ? _message : NULL;
+        }
+
+         void update(enum ui_key key = UI_KEY_NONE)
         {
             unsigned long now = millis();
             Menu *prev = _menu;
 
             if (key != UI_KEY_NONE || now > _update_time) {
                 _menu = _menu->update(this, now, key);
-                if (_menu != prev)
+                if (_menu != prev) {
                     _menu->begin(this);
+                    _menu->update(this, 0);
+                }
                 _update_time = now + 500;
             }
         }
