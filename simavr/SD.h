@@ -94,7 +94,7 @@ public:
   }
   virtual int available()
   {
-    return !feof(_file);
+    return _file ? !feof(_file) : 0;
   }
   virtual void flush()
   {
