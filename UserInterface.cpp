@@ -15,6 +15,8 @@
  *
  */
 
+#include "SD.h"
+
 #include "UserInterface.h"
 
 static const float menu_axis_incr[] = {
@@ -28,7 +30,7 @@ static const float menu_axis_incr[] = {
     100.0
 };
 
-static void axis_report(UserInterface *ui, int x, int y, int sel_axis = -1)
+static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
 {
     uint16_t bg, fg, st;
     float pos[AXIS_MAX];
@@ -38,7 +40,7 @@ static void axis_report(UserInterface *ui, int x, int y, int sel_axis = -1)
     st = ui->color(UI_COLOR_STATUS);
 
     int tool = ui->cnc()->toolhead()->selected();
-    ui->setCursor(x, y);
+    ui->setTextCursor(col, row);
     ui->setTextColor(tool ? st : fg, bg);
     ui->print("T");
     ui->print(tool);
@@ -48,7 +50,7 @@ static void axis_report(UserInterface *ui, int x, int y, int sel_axis = -1)
         Axis *axis = ui->cnc()->axis(i);
         bool selected = sel_axis == i;
         pos[i] = axis->position_get_mm();
-        ui->setCursor(x + 6 * (1 + (1 + 1 + 1 + 3 + 1 + 2 + 1) * (i >> 1)), y + 8 * (1 + (i & 1)));
+        ui->setTextCursor(col + 1 + (1 + 1 + 1 + 3 + 1 + 2 + 1) * (i >> 1), row + 1 + (i & 1));
         ui->setTextColor(selected ? st : fg, bg);
         ui->print("XYZE"[i]); ui->print(":");
         if (sel_axis < 0)
@@ -88,7 +90,7 @@ class MenuAxis : public Menu {
             fg = ui->color(UI_COLOR_TEXT);
             st = ui->color(UI_COLOR_STATUS);
 
-            ui->setCursor(0, 8);
+            ui->setTextCursor(0, 0);
 
             if (_sel == SEL_AXIS) {
                 if (key == UI_KEY_DOWN) {
@@ -140,12 +142,70 @@ class MenuAxis : public Menu {
             ui->setTextColor(fg, bg);
             ui->print("    ");
 
-            axis_report(ui, 0, 2*8, _axis);
+            axis_report(ui, 0, 1, _axis);
             return this;
         }
 };
 
 MenuAxis UserInterfaceMenuAxis;
+
+class MenuSD : public Menu {
+    private:
+        File _file;
+        int _sel;
+
+    public:
+        void begin(UserInterface *ui)
+        {
+            ui->clear("SD: /");
+            _file = SD.open("/");
+            _sel = 0;
+        }
+
+        Menu *update(UserInterface *ui, unsigned long now, enum ui_key key)
+        {
+            if (!_file)
+                return &UserInterfaceMenuMain;
+
+            if (key != UI_KEY_NONE) {
+                switch (key) {
+                case UI_KEY_RIGHT:
+                    return &UserInterfaceMenuMain;
+                default:
+                    break;
+                }
+            }
+
+            if (_file.isDirectory())
+                return _update_dir(ui, now, key);
+            else
+                return _update_file(ui, now, key);
+        }
+
+    private:
+        /* SD: /dir
+         *  fname1
+         * /dirname
+         *  fname2
+         *  fname3
+         */
+        Menu *_update_dir(UserInterface *ui, unsigned long now, enum ui_key key)
+        {
+            return this;
+        }
+
+        /* SD: /dir/file
+         *  [..]
+         *  Print
+         *  Delete
+         */
+        Menu *_update_file(UserInterface *ui, unsigned long now, enum ui_key key)
+        {
+            return this;
+        }
+};
+
+MenuSD UserInterfaceMenuSD;
 
 void UserInterface::clear(const char *title)
 {
@@ -185,6 +245,8 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
         case UI_KEY_SELECT:
             ui->cnc_button_set(UI_BUTTON_CYCLE_START);
             break;
+        case UI_KEY_LEFT:
+            return &UserInterfaceMenuSD;
         case UI_KEY_RIGHT:
             return &UserInterfaceMenuAxis;
         default:
@@ -221,7 +283,7 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
             c2 = st;
         }
         ui->fillRect(0, 8, ui->width(), 8, c2);
-        ui->setCursor(0, 8);
+        ui->setTextCursor(0, 1);
         ui->setTextColor(c1, c2);
         ui->print(status);
         _status.blink = !_status.blink;
@@ -231,13 +293,13 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
     if (!now || updated) {
         ui->fillRect(0, 8, ui->width(), 8, bg);
         if (message) {
-            ui->setCursor(0, 8);
+            ui->setTextCursor(0, 1);
             ui->setTextColor(fg, bg);
             ui->print(message);
         }
     }
 
-    axis_report(ui, 0, 2*8);
+    axis_report(ui, 0, 1);
 
     return this;
 }

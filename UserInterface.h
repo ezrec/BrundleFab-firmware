@@ -19,7 +19,7 @@
 #define USERINTERFACE_H
 
 #include "Axis.h"
-#include "Adafruit_GFX.h"
+#include "WindowGFX.h"
 #include "CNC.h"
 
 enum ui_key {
@@ -64,16 +64,12 @@ class MenuMain : public Menu {
 
 extern MenuMain UserInterfaceMenuMain;
 
-class UserInterface : public Adafruit_GFX {
+class UserInterface : public WindowGFX {
     private:
-        Adafruit_GFX *_gfx;
         CNC *_cnc;
         
-        int _width, _height, _top, _left;
         uint16_t _cnc_switch_mask;
         uint16_t _cnc_button_mask;
-
-        int _rows, _cols;
 
         uint16_t _color[UI_COLOR_MAX];
 
@@ -88,16 +84,9 @@ class UserInterface : public Adafruit_GFX {
         Menu *_menu;
 
     public:
-        UserInterface(CNC *cnc, Adafruit_GFX *gfx, int w, int h, int left, int top) : Adafruit_GFX(w, h)
+        UserInterface(CNC *cnc, Adafruit_GFX *gfx, int w, int h, int left, int top) : WindowGFX(gfx, w, h, left, top)
         {
             _cnc = cnc;
-            _top = top;
-            _left = left;
-            _gfx = gfx;
-
-            /* Standard Adafruit_GFX character cell size is 6x8 */
-            _cols = width() / 6;
-            _rows = height() / 8;
 
             _color[UI_COLOR_BACKGROUND] = 0;
             _color[UI_COLOR_TEXT] = 0xffff;
@@ -112,16 +101,6 @@ class UserInterface : public Adafruit_GFX {
         uint16_t color(int nsel)
         {
             return _color[nsel];
-        }
-
-        int rows()
-        {
-            return _rows;
-        }
-
-        int cols()
-        {
-            return _cols;
         }
 
         CNC *cnc()
@@ -231,46 +210,14 @@ class UserInterface : public Adafruit_GFX {
                 _cnc_switch_mask &= ~mask;
         }
 
-        /* Adafruit_GFX overrides */
-        virtual void drawPixel(int16_t x, int16_t y, uint16_t color)
+        void setTextCursor(int16_t col, int16_t row)
         {
-            _gfx->drawPixel(_left + x, _top + y, color);
+            WindowGFX::setTextCursor(col, row + 1);
         }
 
-        virtual void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color)
+        int16_t rows()
         {
-            _gfx->drawLine(_left + x0, _top + y0,
-                           _left + x1, _top + y1, color);
-        }
-
-        virtual void drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color)
-        {
-            _gfx->drawFastVLine(_left + x, _top + y, h, color);
-        }
-
-        virtual void drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color)
-        {
-            _gfx->drawFastHLine(_left + x, _top + y, w, color);
-        }
-
-        virtual void drawRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
-        {
-            _gfx->drawRect(_left + x, _top + y, w, h, color);
-        }
-
-        virtual void fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color)
-        {
-            _gfx->fillRect(_left + x, _top + y, w, h, color);
-        }
-
-        virtual void fillScreen(uint16_t color)
-        {
-            _gfx->fillRect(_left, _top, _width, _height, color);
-        }
-
-        virtual void invertDisplay(boolean inv)
-        {
-            _gfx->invertDisplay(inv);
+            return WindowGFX::rows() - 1;
         }
 };
 

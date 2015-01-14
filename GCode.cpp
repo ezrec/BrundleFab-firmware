@@ -482,19 +482,13 @@ void GCode::_block_do(struct gcode_block *blk)
             out->print("}");
             break;
         case 23: /* M23 - Select SD file */
-            _file = SD.open(blk->string);
+            file_select(blk->string);
             break;
         case 24: /* M24 - Start SD print */
-            _file_enable = true;
-            if (_file) {
-                _ui->status_set(NULL);
-                _ui->message_set(_file.name());
-            }
+            file_start();
             break;
         case 25: /* M25 - Pause SD print */
-            _file_enable = false;
-            if (_file)
-                _ui->status_set(_file.name());
+            file_stop();
             break;
         case 26: /* M26 - Set SD position */
             if (_file)
@@ -514,12 +508,8 @@ void GCode::_block_do(struct gcode_block *blk)
             SD.remove(blk->string);
             break;
         case 32: /* M32 - Select SD file, and print */
-            _file = SD.open(blk->string);
-            _file_enable = true;
-            if (_file) {
-                _ui->status_set(NULL);
-                _ui->message_set(_file.name());
-            }
+            if (file_select(blk->string))
+                file_start();
             break;
         case 36: /* M36 - Return file information */
             tmp_file = SD.open(blk->string);

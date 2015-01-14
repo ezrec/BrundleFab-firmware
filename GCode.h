@@ -174,6 +174,44 @@ class GCode {
             }
         }
 
+        File *file()
+        {
+            return &_file;
+        }
+
+        bool file_select(const char *filename)
+        {
+            _file = SD.open(filename);
+            return _file;
+        }
+
+        bool file_start()
+        {
+            if (!_file)
+                return false;
+
+            if (!_file_enable) {
+                _ui->status_set(NULL);
+                _ui->message_set(_file.name());
+                _file_enable = true;
+            }
+
+            return true;
+        }
+
+        bool file_stop()
+        {
+            if (!_file)
+                return false;
+
+            if (_file_enable) {
+                _ui->status_set(_file.name());
+                _file_enable = false;
+            }
+
+            return true;
+        }
+
     private:
         void _block_do(struct gcode_block *blk);
         bool _line_parse(struct gcode_line *line, struct gcode_block *blk);
