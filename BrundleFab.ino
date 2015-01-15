@@ -33,6 +33,7 @@
 #include "ToolInk.h"
 #include "ToolFuser.h"
 
+#include "UserInterface.h"
 #include "Visualize.h"
 
 #include "Adafruit_Joystick.h"
@@ -63,7 +64,7 @@ CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
 
 UserInterface ui = UserInterface(&cnc, &tft, ST7735_TFTWIDTH, 5*8, 0, 0);
 
-GCode gcode = GCode(&Serial, &cnc, &ui, &vis);
+GCode gcode = GCode(&Serial, &cnc, &vis);
 
 Adafruit_Joystick joy = Adafruit_Joystick(JOY_PIN);
 
@@ -128,11 +129,16 @@ static enum ui_key keymap(int joy)
 void loop()
 {
     enum ui_key key;
+    bool cnc_active, ui_active;
 
-    gcode.update();
+    cnc_active = cnc.update();
 
     key = keymap(joy.read());
-    ui.update(key);
+
+    ui_active = ui.update(key);
+
+    if (!ui_active)
+        gcode.update(cnc_active);
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

@@ -21,10 +21,24 @@
 #include "Axis.h"
 #include "ToolHead.h"
 
+#define CNC_STATUS_MAX           32
+#define CNC_MESSAGE_MAX          32
+
+#define CNC_SWITCH_OPTIONAL_STOP 0
+
+#define CNC_BUTTON_CYCLE_START   0
+
 class CNC {
     private:
         Axis *_axis[AXIS_MAX];
         ToolHead *_toolhead;
+
+        uint16_t _switch_mask;
+        uint16_t _button_mask;
+
+        char _status[CNC_STATUS_MAX];
+        char _message[CNC_MESSAGE_MAX];
+        bool _message_updated;
 
     public:
         CNC(Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t)
@@ -78,6 +92,73 @@ class CNC {
         {
             motor_disable();
             _toolhead->stop();
+        }
+
+        void status_set(const char *message)
+        {
+            if (!message || message[0] == 0) {
+                _status[0] = 0;
+            } else {
+                strncpy(_status, message, CNC_STATUS_MAX);
+            }
+        }
+        
+        const char *status_get()
+        {
+            return _status[0] ? _status : NULL;
+        }
+
+        void message_set(const char *message)
+        {
+            if (!message || message[0] == 0) {
+                _message[0] = 0;
+            } else {
+                strncpy(_message, message, CNC_STATUS_MAX);
+            }
+            _message_updated = true;
+        }
+
+        const char *message_get(bool *updated = NULL)
+        {
+            if (updated) {
+                *updated = _message_updated;
+                _message_updated = false;
+            }
+
+            return _message[0] ? _message : NULL;
+        }
+
+        bool button_get(int button)
+        {
+            uint16_t mask = (1 << button);
+            bool pressed;
+
+            pressed = (_button_mask & mask) ? true : false;
+                
+            _button_mask &= ~mask;
+
+            return pressed;
+        }
+
+        void button_set(int button)
+        {
+            uint16_t mask = (1 << button);
+
+            _button_mask |= mask;
+        }
+
+        bool switch_get(int sw)
+        {
+            return (_switch_mask & (1 << sw)) ? true : false;
+        }
+
+        void switch_set(int sw, bool enabled = true)
+        {
+            uint16_t mask = (1 << sw);
+            if (enabled)
+                _switch_mask |= mask;
+            else
+                _switch_mask &= ~mask;
         }
 
         bool update()

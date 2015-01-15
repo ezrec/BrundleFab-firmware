@@ -29,17 +29,10 @@ enum ui_key {
     UI_KEY_LEFT, UI_KEY_RIGHT
 };
 
-#define UI_STATUS_MAX           32
-#define UI_MESSAGE_MAX          32
-
 #define UI_COLOR_BACKGROUND     0
 #define UI_COLOR_TEXT           1
 #define UI_COLOR_STATUS         2
 #define UI_COLOR_MAX            3
-
-#define UI_SWITCH_OPTIONAL_STOP 0
-
-#define UI_BUTTON_CYCLE_START   0
 
 class UserInterface;
 
@@ -68,18 +61,9 @@ class UserInterface : public WindowGFX {
     private:
         CNC *_cnc;
         
-        uint16_t _cnc_switch_mask;
-        uint16_t _cnc_button_mask;
-
         uint16_t _color[UI_COLOR_MAX];
 
         unsigned long _update_time;
-
-        char _status[UI_STATUS_MAX];
-        char _message[UI_MESSAGE_MAX];
-        bool _message_updated;
-
-        bool _paused;
 
         Menu *_menu;
 
@@ -116,43 +100,9 @@ class UserInterface : public WindowGFX {
             _update_time = millis();
         }
 
-        void clear(const char *title);
+        void clear(const char *title, const char *subtitle = NULL);
 
-        void status_set(const char *message)
-        {
-            if (!message || message[0] == 0) {
-                _status[0] = 0;
-            } else {
-                strncpy(_status, message, UI_STATUS_MAX);
-            }
-        }
-        
-        const char *status()
-        {
-            return _status[0] ? _status : NULL;
-        }
-
-        void message_set(const char *message)
-        {
-            if (!message || message[0] == 0) {
-                _message[0] = 0;
-            } else {
-                strncpy(_message, message, UI_STATUS_MAX);
-            }
-            _message_updated = true;
-        }
-
-        const char *message(bool *updated = NULL)
-        {
-            if (updated) {
-                *updated = _message_updated;
-                _message_updated = false;
-            }
-
-            return _message[0] ? _message : NULL;
-        }
-
-         void update(enum ui_key key = UI_KEY_NONE)
+        bool update(enum ui_key key = UI_KEY_NONE)
         {
             unsigned long now = millis();
             Menu *prev = _menu;
@@ -165,49 +115,8 @@ class UserInterface : public WindowGFX {
                 }
                 _update_time = now + 500;
             }
-        }
 
-        void on_pause()
-        {
-            _paused = true;
-        }
-
-        void on_run()
-        {
-            _paused = false;
-        }
-
-        bool cnc_button(int cnc_button)
-        {
-            uint16_t mask = (1 << cnc_button);
-            bool pressed;
-
-            pressed = (_cnc_button_mask & mask) ? true : false;
-                
-            _cnc_button_mask &= ~mask;
-
-            return pressed;
-        }
-
-        void cnc_button_set(int cnc_button)
-        {
-            uint16_t mask = (1 << cnc_button);
-
-            _cnc_button_mask |= mask;
-        }
-
-        bool cnc_switch(int cnc_switch)
-        {
-            return (_cnc_switch_mask & (1 << cnc_switch)) ? true : false;
-        }
-
-        void cnc_switch_set(int cnc_switch, bool enabled = true)
-        {
-            uint16_t mask = (1 << cnc_switch);
-            if (enabled)
-                _cnc_switch_mask |= mask;
-            else
-                _cnc_switch_mask &= ~mask;
+            return (_menu != &UserInterfaceMenuMain);
         }
 
         void setTextCursor(int16_t col, int16_t row)

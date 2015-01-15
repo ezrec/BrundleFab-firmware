@@ -552,8 +552,7 @@ void GCode::_block_do(struct gcode_block *blk)
         case 117:
             out->print(" ");
             out->print(blk->string);
-            if (_ui)
-                _ui->status_set(blk->string);
+            _cnc->status_set(blk->string);
             break;
         case 124: /* M124 - Immediate motor stop */
             _cnc->stop();
@@ -567,14 +566,10 @@ void GCode::_block_do(struct gcode_block *blk)
     }
 }
 
-void GCode::update()
+void GCode::update(bool cnc_active)
 {
-    bool motion = false;
-
-    motion = _cnc->update();
-
     /* If the axes are idle, then the current active block is done */
-    if (!motion) {
+    if (!cnc_active) {
         if (_block.active) {
             _block.active->next = _block.free;
             _block.free = _block.active;
@@ -590,18 +585,18 @@ void GCode::update()
         }
     }
 
+    /* Serial input is of higher priority than SD input */
+    _process_io(&_console);
+
     /* If paused, wait for the Cycle Start button to be pressed
      */
-    if (_mode == MODE_PAUSE) {
-        if (_ui && _ui->cnc_button(UI_BUTTON_CYCLE_START)) {
-            _mode = MODE_RUN;
+    if (!_file_enable) {
+        if (_cnc->button_get(CNC_BUTTON_CYCLE_START)) {
+            run();
         } else {
             return;
         }
     }
-
-    /* Serial input is of higher priority than SD input */
-    _process_io(&_console);
 
     _process_io(&_program);
 }
@@ -632,7 +627,7 @@ void GCode::_process_io(struct gcode_io *io)
             _debug->print(c);
 
         if (_line_update(&io->line, c)) {
-            if (_mode == MODE_HALT) {
+            if (_halted) {
                 io->out->println("!!");
             } else if (_line_parse(&io->line, blk)) {
                 io->out->print("ok");
@@ -657,7 +652,7 @@ void GCode::_process_block(struct gcode_block *blk)
     /* Special case: M112 Emergency stop */
     if (blk->code == 'M' && blk->cmd == 112) {
         _cnc->motor_disable();
-        _mode = MODE_HALT;
+        _halted = true;
         return;
     }
 

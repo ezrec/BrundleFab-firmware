@@ -259,9 +259,9 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
     st = ui->color(UI_COLOR_STATUS);
   
     bool updated;
-    const char *message = ui->message(&updated);
+    const char *message = ui->cnc()->message_get(&updated);
 
-    status = ui->status();
+    status = ui->cnc()->status_get();
     if (!_status.enable && status) {
         _status.enable = true;
         _status.time = now;
@@ -283,7 +283,7 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
             c2 = st;
         }
         ui->fillRect(0, 8, ui->width(), 8, c2);
-        ui->setTextCursor(0, 1);
+        ui->setTextCursor(0, 0);
         ui->setTextColor(c1, c2);
         ui->print(status);
         _status.blink = !_status.blink;
@@ -293,7 +293,7 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
     if (!now || updated) {
         ui->fillRect(0, 8, ui->width(), 8, bg);
         if (message) {
-            ui->setTextCursor(0, 1);
+            ui->setTextCursor(0, 0);
             ui->setTextColor(fg, bg);
             ui->print(message);
         }

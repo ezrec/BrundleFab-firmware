@@ -26,11 +26,9 @@
 #include <Stream.h>
 #include <SD.h>
 
-#include "Axis.h"
-#include "ToolHead.h"
+#include "CNC.h"
 #include "StreamNull.h"
 #include "Visualize.h"
-#include "UserInterface.h"
 
 #define DEBUG_ECHO      (1 << 0)
 #define DEBUG_INFO      (1 << 1)
@@ -105,19 +103,22 @@ class GCode {
         enum { ABSOLUTE = 0, RELATIVE } _positioning;
         float _units_to_mm;
         float _feed_rate;
-        enum { MODE_HALT = 0, MODE_PAUSE, MODE_RUN } _mode;
-        UserInterface *_ui;
         CNC *_cnc;
+        bool _halted;
+
     public:
-        GCode(Stream *s, CNC *cnc,
-                   UserInterface *ui = 0, Visualize *vis = 0)
+        GCode(Stream *s, CNC *cnc, Visualize *vis = 0)
         {
-            _ui = ui;
             _vis = vis;
             _cnc = cnc;
+            _stream = s;
+        }
+
+        void begin(const char *filename = NULL)
+        {
+            _halted = false;
             _positioning = ABSOLUTE;
             _units_to_mm = 1.0;
-            _stream = s;
             _feed_rate = 1.0;
             _offset[AXIS_X] = 0;
             _offset[AXIS_Y] = 0;
@@ -126,52 +127,44 @@ class GCode {
 
             _debug = &_null;
 
-            for (int i = 0; i < GCODE_QUEUE_MAX - 1; i++) {
-                _block.ring[i].next = &_block.ring[i+1];
-            }
-
-            _block.free = &_block.ring[0];
-            _block.pending_tail = &_block.pending;
-
-            _mode = MODE_RUN;
-        }
-
-        void begin()
-        {
             _console.in = _stream;
             _console.out = _stream;
 
             _console.out->println("start");
 
             _file = SD.open("start.gco");
+
             _file_enable = _file;
+
             if (_file_enable)
-                _ui->message_set(_file.name());
+                _cnc->message_set(_file.name());
 
             _program.in = &_file;
             _program.out = &_null;
+
+            for (int i = 0; i < GCODE_QUEUE_MAX - 1; i++) {
+                _block.ring[i].next = &_block.ring[i+1];
+            }
+
+            _block.free = &_block.ring[0];
+            _block.pending_tail = &_block.pending;
         }
 
-        void update();
+        void update(bool cnc_active);
 
         void pause(bool check_switch = false)
         {
-            if (check_switch && _ui)
-                if (_ui->cnc_switch(UI_SWITCH_OPTIONAL_STOP) == 0)
+            if (check_switch)
+                if (_cnc->switch_get(CNC_SWITCH_OPTIONAL_STOP) == 0)
                     return;
 
-            _mode = MODE_PAUSE;
-            if (_ui)
-                _ui->on_pause();
+            _file_enable = false;
         }
 
         void run()
         {
-            if (_mode == MODE_PAUSE) {
-                if (_ui)
-                    _ui->on_run();
-                _mode = MODE_RUN;
-            }
+            if (!_file_enable)
+                _file_enable = _file;
         }
 
         File *file()
@@ -191,8 +184,8 @@ class GCode {
                 return false;
 
             if (!_file_enable) {
-                _ui->status_set(NULL);
-                _ui->message_set(_file.name());
+                _cnc->status_set(NULL);
+                _cnc->message_set(_file.name());
                 _file_enable = true;
             }
 
@@ -205,7 +198,7 @@ class GCode {
                 return false;
 
             if (_file_enable) {
-                _ui->status_set(_file.name());
+                _cnc->status_set(_file.name());
                 _file_enable = false;
             }
 
