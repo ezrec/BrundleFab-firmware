@@ -101,7 +101,7 @@ void setup()
     axisZ.begin();
     axisE.begin();
 
-    gcode.begin();
+    gcode.begin("start.gco");
 }
 
 static unsigned long next_update = millis();

@@ -132,7 +132,11 @@ class GCode {
 
             _console.out->println("start");
 
-            _file = SD.open("start.gco");
+            if (_file)
+                _file.close();
+
+            if (filename)
+                _file = SD.open(filename);
 
             _file_enable = _file;
 
@@ -172,9 +176,12 @@ class GCode {
             return &_file;
         }
 
-        bool file_select(const char *filename)
+        bool file_select(File *file)
         {
-            _file = SD.open(filename);
+            if (_file)
+                _file.close();
+
+            _file = *file;
             return _file;
         }
 
