@@ -80,7 +80,7 @@ class Adafruit_ST7735 : public Adafruit_GFX {
         void initR(uint8_t options = INITR_GREENTAB)
         {
             _surface = SDL_SetVideoMode(
-                      ST7735_TFTWIDTH, ST7735_TFTHEIGHT_18,
+                      ST7735_TFTWIDTH * 2, ST7735_TFTHEIGHT_18 * 2,
                       32, SDL_SWSURFACE);
             SDL_WM_SetCaption("BrundleFab: TFT", NULL);
             SDL_FillRect(_surface, NULL, SDL_MapRGB(_surface->format, 0xff, 0xff, 0xff));
@@ -98,8 +98,13 @@ class Adafruit_ST7735 : public Adafruit_GFX {
                     ((color >>  5) << 2) & 0xff,
                     ((color >>  0) << 3) & 0xff);
 
+            x *= 2;
+            y *= 2;
             _pixel_lock();
             ((Uint32 *)_surface->pixels)[y * _surface->w + x] = pixel;
+            ((Uint32 *)_surface->pixels)[y * _surface->w + x + 1] = pixel;
+            ((Uint32 *)_surface->pixels)[(y + 1) * _surface->w + x] = pixel;
+            ((Uint32 *)_surface->pixels)[(y + 1)* _surface->w + x + 1] = pixel;
             _pixel_unlock();
         }
 
@@ -149,10 +154,10 @@ class Adafruit_ST7735 : public Adafruit_GFX {
                     ((color >>  0) << 3) & 0xff);
             SDL_Rect r;
 
-            r.x = x;
-            r.y = y;
-            r.w = w;
-            r.h = h;
+            r.x = x * 2;
+            r.y = y * 2;
+            r.w = w * 2;
+            r.h = h * 2;
             _pixel_lock();
             SDL_FillRect(_surface, &r, pixel);
             _pixel_unlock();
