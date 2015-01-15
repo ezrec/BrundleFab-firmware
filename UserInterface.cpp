@@ -75,6 +75,7 @@ class MenuAxis : public Menu {
             ui->clear("Manual Move");
             _axis = 0;
             _incr = 5;
+            _sel = SEL_INCR;
         }
 
         /* Manual Move 
@@ -103,8 +104,6 @@ class MenuAxis : public Menu {
                         _axis = AXIS_MAX-1;
                 } else if (key == UI_KEY_RIGHT)
                     _sel = SEL_INCR;
-                else if (key == UI_KEY_LEFT)
-                    return &UserInterfaceMenuMain;
             } else if (_sel == SEL_INCR) {
                 if (key == UI_KEY_UP && _incr < (int)(sizeof(menu_axis_incr)/sizeof(menu_axis_incr[0])-1))
                     _incr++;
@@ -112,6 +111,8 @@ class MenuAxis : public Menu {
                     _incr--;
                 else if (key == UI_KEY_LEFT)
                     _sel = SEL_AXIS;
+                else if (key == UI_KEY_RIGHT)
+                    return &UserInterfaceMenuMain;
             }
 
             if (key == UI_KEY_SELECT) {
@@ -152,29 +153,43 @@ MenuAxis UserInterfaceMenuAxis;
 class MenuSD : public Menu {
     private:
         File _file;
-        int _sel;
+        uint16_t _sel, _ith, _max;
 
     public:
         void begin(UserInterface *ui)
         {
-            ui->clear("SD: /");
-            _file = SD.open("/");
+            begin(ui, NULL);
+        }
+
+        void begin(UserInterface *ui, File *file)
+        {
+            if (_file)
+                _file.close();
+            if (file)
+                _file = *file;
+            else
+                _file = SD.open("");
+
+            _ith = 0;
+            _max = ~0;
             _sel = 0;
         }
 
         Menu *update(UserInterface *ui, unsigned long now, enum ui_key key)
         {
+            char *name;
+
             if (!_file)
                 return &UserInterfaceMenuMain;
 
-            if (key != UI_KEY_NONE) {
-                switch (key) {
-                case UI_KEY_RIGHT:
-                    return &UserInterfaceMenuMain;
-                default:
-                    break;
-                }
-            }
+            /* Don't refresh the screen unless we have a key,
+             * or the special 'now = 0'
+             */
+            if (now && key == UI_KEY_NONE)
+                return this;
+
+            name = _file.name();
+            ui->clear("SD: ", name[0] ? name : "/");
 
             if (_file.isDirectory())
                 return _update_dir(ui, now, key);
@@ -191,6 +206,93 @@ class MenuSD : public Menu {
          */
         Menu *_update_dir(UserInterface *ui, unsigned long now, enum ui_key key)
         {
+            uint16_t fg, bg;
+            uint16_t rows = ui->rows();
+            File tmp;
+
+            switch (key) {
+            case UI_KEY_UP:
+                if (_ith > 0) {
+                    _ith--;
+                    _sel--;
+                } else if (_sel > 0) {
+                    _sel--;
+                }
+                break;
+            case UI_KEY_DOWN:
+                if (_ith < _max) {
+                    _ith++;
+                    _sel++;
+                } else if (_sel < _max) {
+                    _sel++;
+                }
+                break;
+            case UI_KEY_LEFT:
+                if (_ith < rows) {
+                    if (_file.name()[0] == 0) {
+                        _file.close();
+                        return &UserInterfaceMenuMain;
+                    }
+                    begin(ui);
+                    update(ui, 0, UI_KEY_NONE);
+                    return this;
+                } else {
+                    _ith -= rows;
+                    _sel += rows;
+                }
+                break;
+            case UI_KEY_RIGHT:
+                if ((_ith + rows) < _max) {
+                    _ith += rows;
+                    _sel += rows;
+                }
+                break;
+            case UI_KEY_SELECT:
+                _file.rewindDirectory();
+                for (uint16_t i = 0; i < _sel; i++) {
+                    tmp = _file.openNextFile();
+                    tmp.close();
+                }
+                tmp = _file.openNextFile();
+                begin(ui, &tmp);
+                update(ui, 0, UI_KEY_NONE);
+                return this;
+            default:
+                break;
+            }
+
+            _file.rewindDirectory();
+            for (uint16_t i = 0; i < _ith; i++) {
+                tmp = _file.openNextFile();
+                if (!tmp) {
+                    _max = i;
+                    _ith = (i - 1);
+                    break;
+                }
+                tmp.close();
+            }
+
+            bg = ui->color(UI_COLOR_BACKGROUND);
+            fg = ui->color(UI_COLOR_TEXT);
+
+            ui->setTextWrap(false);
+            for (uint16_t i = 0; i < (_max - _ith) && i < rows; i++) {
+                tmp = _file.openNextFile();
+                if (!tmp)
+                    break;
+                if ((_ith + i) == _sel)
+                    ui->setTextColor(bg, fg);
+                else
+                    ui->setTextColor(fg, bg);
+                ui->setTextCursor(0, i);
+                if (tmp.isDirectory())
+                    ui->print("/");
+                else
+                    ui->print(" ");
+                ui->print(tmp.name());
+                tmp.close();
+            }
+
             return this;
         }
 
@@ -201,16 +303,53 @@ class MenuSD : public Menu {
          */
         Menu *_update_file(UserInterface *ui, unsigned long now, enum ui_key key)
         {
+            uint32_t size = _file.size();
+            int block = ui->rows() * ui->cols();
+            int c;
+
+            switch (key) {
+            case UI_KEY_LEFT:
+                begin(ui);
+                update(ui, 0, UI_KEY_NONE);
+                return this;
+            case UI_KEY_UP:
+                if (_ith > 0)
+                    _ith--;
+                break;
+            case UI_KEY_DOWN:
+                if (_ith < (size + block - 1) / block)
+                    _ith++;
+                break;
+            case UI_KEY_SELECT:
+                ui->file_put(&_file);
+                return &UserInterfaceMenuMain;
+            default:
+                break;
+            }
+
+            ui->setTextCursor(0, 0);
+            ui->setTextWrap(true);
+            _file.seek(block * _ith);
+            for (int i = 0; i < block; i++) {
+                c = _file.read();
+                if ( c < 0)
+                    break;
+                if (c == '\r') c = '.';
+                if (c == '\n') c = '\\';
+                ui->print((char)c);
+            }
+
             return this;
         }
 };
 
 MenuSD UserInterfaceMenuSD;
 
-void UserInterface::clear(const char *title)
+void UserInterface::clear(const char *title, const char *subtitle)
 {
     uint16_t bg, fg;
     int tlen = strlen(title);
+    int slen = subtitle ? strlen(subtitle) : 0;
 
     bg = color(UI_COLOR_BACKGROUND);
     fg = color(UI_COLOR_TEXT);
@@ -221,13 +360,15 @@ void UserInterface::clear(const char *title)
     setTextWrap(false);
     setTextColor(bg, fg);
 
-    if (cols() < tlen) {
+    if (slen || (cols() < tlen)) {
         setCursor(0, 0);
     } else {
         setCursor((width() - tlen*6)/2, 0);
     }
 
     print(title);
+    if (slen)
+        print(subtitle);
 }
 
 void MenuMain::begin(UserInterface *ui)
@@ -243,11 +384,11 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
     if (key != UI_KEY_NONE) {
         switch (key) {
         case UI_KEY_SELECT:
-            ui->cnc_button_set(UI_BUTTON_CYCLE_START);
+            ui->cnc()->button_set(CNC_BUTTON_CYCLE_START);
             break;
-        case UI_KEY_LEFT:
-            return &UserInterfaceMenuSD;
         case UI_KEY_RIGHT:
+            return &UserInterfaceMenuSD;
+        case UI_KEY_LEFT:
             return &UserInterfaceMenuAxis;
         default:
             break;

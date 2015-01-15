@@ -514,8 +514,7 @@ void GCode::_block_do(struct gcode_block *blk)
             if (_file)
                 _file.close();
             tmp_file = SD.open(blk->string);
-            if (file_select(&tmp_file))
-                file_start();
+            file_select(&tmp_file, true);
             break;
         case 36: /* M36 - Return file information */
             tmp_file = SD.open(blk->string);

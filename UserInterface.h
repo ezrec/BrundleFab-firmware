@@ -67,6 +67,8 @@ class UserInterface : public WindowGFX {
 
         Menu *_menu;
 
+        File *_file;
+
     public:
         UserInterface(CNC *cnc, Adafruit_GFX *gfx, int w, int h, int left, int top) : WindowGFX(gfx, w, h, left, top)
         {
@@ -75,6 +77,24 @@ class UserInterface : public WindowGFX {
             _color[UI_COLOR_BACKGROUND] = 0;
             _color[UI_COLOR_TEXT] = 0xffff;
             _color[UI_COLOR_STATUS] = 0xffff;
+        }
+
+        void file_put(File *f)
+        {
+            if (_file)
+                _file->close();
+
+            _file = f;
+        }
+
+        File *file_get()
+        {
+            File *ret;
+
+            ret = _file;
+            _file = NULL;
+
+            return ret;
         }
 
         void color_set(int nsel, uint16_t color)
@@ -94,6 +114,7 @@ class UserInterface : public WindowGFX {
 
         void begin()
         {
+            file_put(NULL);
             _menu = &UserInterfaceMenuMain;
             _menu->begin(this);
             _menu->update(this, 0);

@@ -176,13 +176,17 @@ class GCode {
             return &_file;
         }
 
-        bool file_select(File *file)
+        bool file_select(File *file, bool start = false)
         {
+            if (!file)
+                return _file;
+
             if (_file)
                 _file.close();
 
             _file = *file;
-            return _file;
+
+            return start ? file_start() : _file;
         }
 
         bool file_start()

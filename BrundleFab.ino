@@ -137,8 +137,15 @@ void loop()
 
     ui_active = ui.update(key);
 
-    if (!ui_active)
+    if (!ui_active) {
+        /* If ui.file_get()
+         *    returns NULL, gcode.file_select() does nothing
+         *    returns closed file, gcode.file_select() stops current file
+         *    return open file, gcode.file_select() uses it
+         */
+        gcode.file_select(ui.file_get(), true);
         gcode.update(cnc_active);
+    }
 }
 
 /* vim: set shiftwidth=4 expandtab:  */
