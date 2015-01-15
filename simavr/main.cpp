@@ -35,8 +35,6 @@ int main(int argc, char **argv)
     do {
         SDL_Event ev;
 
-        usleep(1000);
-
         loop();
 
         if (SDL_PollEvent(&ev)) {

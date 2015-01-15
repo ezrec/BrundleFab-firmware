@@ -40,6 +40,9 @@ public:
     struct stat st;
     int err;
 
+    if (name && name[0] == 0)
+      name = ".";
+
     _name = name ? strdup(name) : NULL;
     if (_name == NULL) {
       _dir = NULL;
@@ -63,6 +66,9 @@ public:
       _file = fopen(_name, marg);
       _dir  = NULL;
     }
+
+    if (strcmp(_name, ".") == 0)
+      _name[0] = 0;
   }
 
   File(void)
@@ -139,8 +145,8 @@ public:
   }
   char * name()
   {
-    char *cp = strrchr(_name, '/');
-    return cp ? (cp+1) : _name;
+    char *cp = _name ? ::strrchr(_name, '/') : NULL;
+    return cp ? (cp + 1) : _name;
   }
 
   boolean isDirectory(void)
@@ -156,14 +162,25 @@ public:
     if (!_dir)
       return File();
 
-    de = readdir(_dir);
-    if (!de)
-      return File();
+     do {
+       struct stat st;
+        de = readdir(_dir);
+        if (!de)
+          return File();
 
-    snprintf(path, sizeof(path), "%s/%s", _name, de->d_name);
-    path[sizeof(path)-1] = 0;
+        if (_name[0] == 0)
+          snprintf(path, sizeof(path), "%s", de->d_name);
+        else
+          snprintf(path, sizeof(path), "%s/%s", _name, de->d_name);
+        path[sizeof(path)-1] = 0;
 
-    return File(path, mode);
+        stat(path, &st);
+        if (!S_ISREG(st.st_mode) && !S_ISDIR(st.st_mode))
+          continue;
+
+      } while (strcmp(de->d_name, ".")==0  ||  strcmp(de->d_name, "..") == 0);
+
+      return File(path, mode);
   }
 
   void rewindDirectory(void)
