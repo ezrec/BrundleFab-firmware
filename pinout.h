@@ -35,13 +35,13 @@
 #define SD_CS                   53      /* D53 aka SS_PIN */
 
 #define X_MOTOR                 3       /* AFMotor M3 */
-#define XENC_A                  19      /* Encoder A */
+#define XENC_A                  18      /* Encoder A */
 #define XENC_B                  27      /* Encoder B */
-#define XSTP_MIN                33      /* Endstop (minimum) */
-#define XSTP_MAX                31      /* Encstop (maximum) */
+#define XSTP_MIN                35      /* Endstop (minimum) */
+#define XSTP_MAX                33      /* Encstop (maximum) */
 
 #define Y_MOTOR                 4       /* AFMotor M4 */
-#define YENC_A                  18      /* Encoder A */
+#define YENC_A                  19      /* Encoder A */
 #define YENC_B                  29      /* Encoder B */
 #define YSTP_MIN                -1
 #define YSTP_MAX                -1
