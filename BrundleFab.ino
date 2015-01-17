@@ -133,19 +133,24 @@ void loop()
 
     cnc_active = cnc.update();
 
-    key = keymap(joy.read());
+    if (!cnc_active) {
+        key = keymap(joy.read());
 
-    ui_active = ui.update(key);
+        ui_active = ui.update(key);
 
-    if (!ui_active) {
         /* If ui.file_get()
          *    returns NULL, gcode.file_select() does nothing
          *    returns closed file, gcode.file_select() stops current file
          *    return open file, gcode.file_select() uses it
          */
-        gcode.file_select(ui.file_get(), true);
-        gcode.update(cnc_active);
+        if (!ui_active)
+            gcode.file_select(ui.file_get(), true);
+    } else {
+        ui_active = false;
     }
+
+    if (!ui_active)
+        gcode.update(cnc_active);
 }
 
 /* vim: set shiftwidth=4 expandtab:  */
