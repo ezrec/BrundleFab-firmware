@@ -33,7 +33,7 @@ class Axis_AFStepper : public Axis {
         int _pinStopMin;
         int _pinStopMax;
 
-        static const int _maxPos = 11500;
+        static const int _maxPos = 10000;
         static const int _minPos = 0;
 
         float _mm_to_position;
