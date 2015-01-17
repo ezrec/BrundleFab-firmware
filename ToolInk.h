@@ -32,8 +32,8 @@ class ToolInk : public Tool {
         virtual void parm(enum parm_e p, float val = 0.0)
         {
             switch (p) {
-            case TOOL_PARM_P: _pattern = (uint16_t)val; break;
-            case TOOL_PARM_S: _pulse_per_minute = (uint32_t)val; break;
+            case PARM_P: _pattern = (uint16_t)val; break;
+            case PARM_S: _pulse_per_minute = (uint32_t)val; break;
             default: break;
             }
         }

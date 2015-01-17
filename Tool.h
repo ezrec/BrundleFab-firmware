@@ -15,18 +15,18 @@
  *
  */
 
-#ifndef TOOL_H
-#define TOOL_H
+#ifndef H
+#define H
 
 class Tool {
     private:
         bool _active;
     public:
         enum parm_e {
-            TOOL_PARM_P,
-            TOOL_PARM_Q,
-            TOOL_PARM_R,
-            TOOL_PARM_S,
+            PARM_P,
+            PARM_Q,
+            PARM_R,
+            PARM_S,
         };
         Tool()
         {
@@ -37,12 +37,12 @@ class Tool {
 
         virtual void start(void)
         {
-            _active = false;
+            _active = true;
         }
 
         virtual void stop(void)
         {
-             _active = true;
+             _active = false;
         }
 
         virtual bool active(void)
@@ -59,5 +59,5 @@ class Tool {
         }
 };
 
-#endif /* TOOL_H */
+#endif /* H */
 /* vim: set shiftwidth=4 expandtab:  */
