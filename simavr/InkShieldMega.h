@@ -32,7 +32,9 @@ class InkShieldA0A3 {
 
         void spray_ink(int pattern)
         {
-            for (int i = 0; i < 16; i++) {
+            printf("INK: ");
+            for (int i = 0; i < 12; i++) {
+                printf("%d", (pattern >> i) & 1);
                 if (pattern & (1 << i)) {
                     analogWrite(0, (i >> 0) & 1);
                     analogWrite(1, (i >> 1) & 1);
@@ -42,6 +44,7 @@ class InkShieldA0A3 {
                 digitalWrite(_pulse_pin, 1);
                 digitalWrite(_pulse_pin, 0);
             }
+            printf("\r\n");
         }
 };
 
