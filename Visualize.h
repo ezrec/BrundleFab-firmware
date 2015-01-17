@@ -21,6 +21,7 @@
 #include <Adafruit_GFX.h>
 
 #include "Axis.h"
+#include "WindowGFX.h"
 
 #define VC_INVISIBLE    -1
 #define VC_AXIS         0
@@ -28,21 +29,15 @@
 #define VC_TOOL         (AXIS_MAX + 1)
 #define VC_FEED         (AXIS_MAX + 2)
 #define VC_BACKGROUND   (AXIS_MAX + 3)
-#define VC_BORDER       (AXIS_MAX + 4)
 
-#define VC_MAX          (AXIS_MAX + 5)
+#define VC_MAX          (AXIS_MAX + 4)
 
 struct point {
     int x, y;
 };
 
-class Visualize {
+class Visualize : public WindowGFX {
     private:
-        Adafruit_GFX *_gfx;
-
-        /* Location of visualization */
-        int _top,_left,_width,_height;
-
         float _scale, _max[AXIS_MAX];
 
         uint16_t _color[VC_MAX];
@@ -55,13 +50,8 @@ class Visualize {
     public:
         Visualize(Adafruit_GFX *gfx, int width, int height,
                   int x = 0, int y = 0)
+            : WindowGFX(gfx, width, height, x, y)
         {
-            _gfx = gfx;
-            _top = y + 1;
-            _left = x + 1;
-            _width = width - 2;
-            _height = height - 2;
-
             for (int i = 0; i < AXIS_MAX; i++)
                 _max[i] = 1000.0;
 
@@ -73,7 +63,7 @@ class Visualize {
         void clear()
         {
             float zero[AXIS_MAX] = {};
-            _gfx->fillRect(_left, _top, _width, _height, _color[VC_BACKGROUND]);
+            fillScreen(_color[VC_BACKGROUND]);
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 float pos[AXIS_MAX] = {};
@@ -97,15 +87,14 @@ class Visualize {
         void clear(float scale)
         {
             _scale = scale;
-            _gfx->drawRect(_left-1, _top-1, _width+2, _height+2, _color[VC_BORDER]);
             clear();
         }
 
         void clear(float x_mm, float y_mm, float z_mm)
         {
             /* Bounding box for the build volume */
-            float scale_y = (float)_height/(z_mm + y_mm/4.0);
-            float scale_x = (float)_width/(x_mm + y_mm/4.0);
+            float scale_y = (float)height()/(z_mm + y_mm/4.0);
+            float scale_x = (float)width()/(x_mm + y_mm/4.0);
 
             _max[AXIS_X] = x_mm;
             _max[AXIS_Y] = y_mm;
@@ -155,7 +144,7 @@ class Visualize {
         void _flatten(const float *pos, struct point *pt)
         {
             pt->x = (pos[AXIS_X] + pos[AXIS_Y]/4.0) * _scale + 1;
-            pt->y = (_height - 1) - (pos[AXIS_Z] + pos[AXIS_Y]/4) * _scale - 1;
+            pt->y = (height() - 1) - (pos[AXIS_Z] + pos[AXIS_Y]/4) * _scale - 1;
         }
 
         void _pixel2d_clipped(uint16_t color, const struct point *pt);

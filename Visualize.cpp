@@ -30,7 +30,7 @@ void Visualize::_pixel2d_clipped(uint16_t color, const struct point *pt)
     if (y < 0 || y >= _height)
         return;
 
-    _gfx->drawPixel(x + _left, y + _top, color);
+    drawPixel(x, y, color);
 }
 
 // From WikiPedia:
@@ -151,7 +151,7 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
     for (int i = 0; i < 3; i++)
         cinc[i] = (color_b[i] - color_a[i])/dist;
 
-    _gfx->drawPixel(_left + x0, _top + y0, r5g6b5(color_a, cinc, pixel++));
+    drawPixel(x0, y0, r5g6b5(color_a, cinc, pixel++));
 
     if (delta_x >= delta_y)
     {
@@ -170,7 +170,7 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
             error += delta_y;
             x0 += ix;
 
-            _gfx->drawPixel(_left + x0, _top + y0, r5g6b5(color_a, cinc, pixel++));
+            drawPixel(x0, y0, r5g6b5(color_a, cinc, pixel++));
         }
     }
     else
@@ -190,7 +190,7 @@ void Visualize::_line2d_clipped(const float *color_a, const struct point *a,
             error += delta_x;
             y0 += iy;
 
-            _gfx->drawPixel(_left + x0, _top + y0, r5g6b5(color_a, cinc, pixel++));
+            drawPixel(x0, y0, r5g6b5(color_a, cinc, pixel++));
         }
     }
 }
