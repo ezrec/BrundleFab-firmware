@@ -116,7 +116,7 @@ class Axis_DCEncoder : public Axis {
                 _mode = HOMING_STALL;
                 _homing.dir = BACKWARD;
                 _homing.home = _minPos;
-                _homing.pwm = _pwmMinimum;
+                _homing.pwm = (_pwmMinimum + _pwmMaximum) / 2;
             }
 
             _motor.setSpeed(_homing.pwm);
@@ -195,6 +195,7 @@ class Axis_DCEncoder : public Axis {
                 break;
             case HOMING_STALL_BACKOFF:
                 if (millis() >= _homing.timeout) {
+                    _motor.setSpeed(_homing.pwm);
                     _encoder.write(_homing.home);
                     Axis::home(_homing.target);
                     _mode = IDLE;
