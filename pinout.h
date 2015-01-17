@@ -35,23 +35,23 @@
 #define SD_CS                   53      /* D53 aka SS_PIN */
 
 #define X_MOTOR                 3       /* AFMotor M3 */
-#define XENC_A                  18      /* Encoder A */
-#define XENC_B                  29      /* Encoder B */
+#define XENC_A                  19      /* Encoder A */
+#define XENC_B                  27      /* Encoder B */
 #define XSTP_MIN                33      /* Endstop (minimum) */
-#define XSTP_MAX                -1
+#define XSTP_MAX                31      /* Encstop (maximum) */
 
 #define Y_MOTOR                 4       /* AFMotor M4 */
-#define YENC_A                  19      /* D18 */
-#define YENC_B                  27      /* D14 */
+#define YENC_A                  18      /* Encoder A */
+#define YENC_B                  29      /* Encoder B */
 #define YSTP_MIN                -1
 #define YSTP_MAX                -1
 
 #define Z_MOTOR                 2       /* Adafruit_MotorShield M2 */
 #define ZSTP_MIN                -1      /* Endstop (Minimim) */
-#define ZSTP_MAX                37      /* Endstop (Maximim) */
+#define ZSTP_MAX                39      /* Endstop (Maximim) */
 
 #define E_MOTOR                 1       /* Adafruit_MotorShield M1 */
-#define ESTP_MIN                39      /* Endstop (Minimum) */
+#define ESTP_MIN                37      /* Endstop (Minimum) */
 #define ESTP_MAX                -1      /* Endstop (Maximim) */
 
 #define FUSER_ENABLE            43      /* Heater enable */
