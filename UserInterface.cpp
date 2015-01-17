@@ -24,11 +24,14 @@ static const float menu_axis_incr[] = {
     -10.0,
     -1.0,
     -0.1,
+    0,
     0.1,
     1.0,
     10.0,
     100.0
 };
+
+#define ARRAY_SIZE(x) (sizeof(x)/sizeof((x)[0]))
 
 static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
 {
@@ -67,14 +70,14 @@ static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
 class MenuAxis : public Menu {
     private:
         int _axis;
-        int _incr;
+        uint16_t _incr;
         enum { SEL_AXIS = 0, SEL_INCR } _sel;
     public:
         void begin(UserInterface *ui)
         {
             ui->clear("Manual Move");
             _axis = 0;
-            _incr = 5;
+            _incr = ARRAY_SIZE(menu_axis_incr)/2;
             _sel = SEL_INCR;
         }
 
@@ -105,7 +108,7 @@ class MenuAxis : public Menu {
                 } else if (key == UI_KEY_RIGHT)
                     _sel = SEL_INCR;
             } else if (_sel == SEL_INCR) {
-                if (key == UI_KEY_UP && _incr < (int)(sizeof(menu_axis_incr)/sizeof(menu_axis_incr[0])-1))
+                if (key == UI_KEY_UP && _incr < (ARRAY_SIZE(menu_axis_incr)-1))
                     _incr++;
                 else if (key == UI_KEY_DOWN && _incr > 0)
                     _incr--;
@@ -116,7 +119,10 @@ class MenuAxis : public Menu {
             }
 
             if (key == UI_KEY_SELECT) {
-                ui->cnc()->axis(_axis)->target_move_mm(menu_axis_incr[_incr]);
+                if (menu_axis_incr[_incr] == 0)
+                    ui->cnc()->axis(_axis)->home();
+                else
+                    ui->cnc()->axis(_axis)->target_move_mm(menu_axis_incr[_incr]);
             }
 
             ui->setTextWrap(false);
@@ -138,7 +144,10 @@ class MenuAxis : public Menu {
             else
                 ui->setTextColor(st, bg);
             ui->print(" ");
-            ui->print(menu_axis_incr[_incr], 2);
+            if (menu_axis_incr[_incr] == 0)
+                ui->print("HOME");
+            else
+                ui->print(menu_axis_incr[_incr], 2);
             ui->print(" ");
             ui->setTextColor(fg, bg);
             ui->print("    ");
