@@ -630,10 +630,7 @@ void GCode::_process_io(struct gcode_io *io)
 
         c = io->in->read();
 
-        if (c == '\r')
-            return;
-
-        if (c == '\n')
+        if (c == '\n' || c == '\r')
             _debug->println();
         else
             _debug->print(c);
