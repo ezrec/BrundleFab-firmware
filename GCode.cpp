@@ -345,14 +345,25 @@ void GCode::_block_do(struct gcode_block *blk)
     float dist, time;
     File tmp_file, *program;
     Stream *out = blk->io->out;
+    ToolHead *th;
 
     program = _cnc->program();
 
     switch (blk->code) {
     case 'T':
-        _cnc->toolhead()->stop();
-        _cnc->toolhead()->select(blk->cmd);
-        _cnc->toolhead()->start();
+        th = _cnc->toolhead();
+
+        th->stop();
+        th->select(blk->cmd);
+        if (blk->update_mask & GCODE_UPDATE_P)
+            th->parm(Tool::PARM_P, blk->p);
+        if (blk->update_mask & GCODE_UPDATE_Q)
+            th->parm(Tool::PARM_Q, blk->q);
+        if (blk->update_mask & GCODE_UPDATE_R)
+            th->parm(Tool::PARM_R, blk->r);
+        if (blk->update_mask & GCODE_UPDATE_S)
+            th->parm(Tool::PARM_S, blk->s);
+        th->start();
         break;
     case 'G':
         switch (blk->cmd) {
