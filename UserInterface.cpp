@@ -330,7 +330,7 @@ class MenuSD : public Menu {
                     _ith++;
                 break;
             case UI_KEY_SELECT:
-                ui->file_put(&_file);
+                ui->cnc()->program_set(&_file);
                 return &UserInterfaceMenuMain;
             default:
                 break;

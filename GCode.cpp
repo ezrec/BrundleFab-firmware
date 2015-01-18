@@ -343,8 +343,10 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 void GCode::_block_do(struct gcode_block *blk)
 {
     float dist, time;
-    File tmp_file;
+    File tmp_file, *program;
     Stream *out = blk->io->out;
+
+    program = _cnc->program();
 
     switch (blk->code) {
     case 'T':
@@ -482,10 +484,7 @@ void GCode::_block_do(struct gcode_block *blk)
             out->print("}");
             break;
         case 23: /* M23 - Select SD file */
-            if (_file)
-                _file.close();
-            tmp_file = SD.open(blk->string);
-            file_select(&tmp_file);
+            file_select(blk->string, true);
             break;
         case 24: /* M24 - Start SD print */
             file_start();
@@ -494,15 +493,15 @@ void GCode::_block_do(struct gcode_block *blk)
             file_stop();
             break;
         case 26: /* M26 - Set SD position */
-            if (_file)
-                _file.seek((uint32_t)blk->s);
+            if (*program)
+                program->seek((uint32_t)blk->s);
             break;
         case 27: /* M27 - Show SD position */
-            if (_file) {
+            if (*program) {
                 out->print(" SD printing byte ");
-                out->print(_file.position());
+                out->print(program->position());
                 out->print("/");
-                out->print(_file.size());
+                out->print(program->size());
             } else {
                 out->print(" Not SD printing");
             }
@@ -511,10 +510,7 @@ void GCode::_block_do(struct gcode_block *blk)
             SD.remove(blk->string);
             break;
         case 32: /* M32 - Select SD file, and print */
-            if (_file)
-                _file.close();
-            tmp_file = SD.open(blk->string);
-            file_select(&tmp_file, true);
+            file_select(blk->string, true);
             break;
         case 36: /* M36 - Return file information */
             tmp_file = SD.open(blk->string);

@@ -101,7 +101,9 @@ void setup()
     axisZ.begin();
     axisE.begin();
 
-    gcode.begin("start.gco");
+    gcode.begin();
+
+    cnc.begin("start.gco");
 }
 
 static unsigned long next_update = millis();
@@ -137,14 +139,6 @@ void loop()
         key = keymap(joy.read());
 
         ui_active = ui.update(key);
-
-        /* If ui.file_get()
-         *    returns NULL, gcode.file_select() does nothing
-         *    returns closed file, gcode.file_select() stops current file
-         *    return open file, gcode.file_select() uses it
-         */
-        if (!ui_active)
-            gcode.file_select(ui.file_get(), true);
     } else {
         ui_active = false;
     }

@@ -89,7 +89,6 @@ class GCode {
         Visualize *_vis;
         Stream *_stream, *_debug;
         StreamNull _null;
-        File _file;
         bool _file_enable;
         float _offset[AXIS_MAX];
 
@@ -114,7 +113,7 @@ class GCode {
             _stream = s;
         }
 
-        void begin(const char *filename = NULL)
+        void begin()
         {
             _halted = false;
             _positioning = ABSOLUTE;
@@ -132,18 +131,9 @@ class GCode {
 
             _console.out->println("start");
 
-            if (_file)
-                _file.close();
+            _file_enable = true;
 
-            if (filename)
-                _file = SD.open(filename);
-
-            _file_enable = _file;
-
-            if (_file_enable)
-                _cnc->message_set(_file.name());
-
-            _program.in = &_file;
+            _program.in = _cnc->program();
             _program.out = &_null;
 
             for (int i = 0; i < GCODE_QUEUE_MAX - 1; i++) {
@@ -168,52 +158,32 @@ class GCode {
         void run()
         {
             if (!_file_enable)
-                _file_enable = _file;
-        }
-
-        File *file()
-        {
-            return &_file;
-        }
-
-        bool file_select(File *file, bool start = false)
-        {
-            if (!file)
-                return _file;
-
-            if (_file)
-                _file.close();
-
-            _file = *file;
-
-            return start ? file_start() : _file;
-        }
-
-        bool file_start()
-        {
-            if (!_file)
-                return false;
-
-            if (!_file_enable) {
-                _cnc->status_set(NULL);
-                _cnc->message_set(_file.name());
                 _file_enable = true;
-            }
+        }
+
+        bool file_select(const char *filename, bool start = false)
+        {
+            bool opened;
+            
+            opened = _cnc->program_set(filename);
+
+            if (!opened)
+                return false;
+
+            if (start)
+                file_start();
 
             return true;
         }
 
-        bool file_stop()
+        void file_start()
         {
-            if (!_file)
-                return false;
+            _file_enable = true;
+        }
 
-            if (_file_enable) {
-                _cnc->status_set(_file.name());
-                _file_enable = false;
-            }
-
-            return true;
+        void file_stop()
+        {
+            _file_enable = false;
         }
 
     private:

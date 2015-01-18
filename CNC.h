@@ -40,6 +40,8 @@ class CNC {
         char _message[CNC_MESSAGE_MAX];
         bool _message_updated;
 
+        File _program;
+
     public:
         CNC(Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t)
         {
@@ -48,6 +50,50 @@ class CNC {
             _axis[AXIS_Z] = z;
             _axis[AXIS_E] = e;
             _toolhead = t;
+        }
+
+        void begin(const char *filename = NULL)
+        {
+            program_set(filename);
+        }
+
+        bool program_set(const char *filename)
+        {
+            if (_program)
+                _program.close();
+
+            if (!filename)
+                return false;
+
+            _program = SD.open(filename);
+
+            if (_program) {
+                status_set(NULL);
+                message_set(_program.name());
+            }
+
+            return _program;
+        }
+
+        bool program_set(File *program)
+        {
+            if (_program)
+                _program.close();
+
+            _program = *program;
+            *program = File();
+                   
+            if (_program) {
+                status_set(NULL);
+                message_set(_program.name());
+            }
+
+            return _program;
+        }
+
+        File *program()
+        {
+            return &_program;
         }
 
         Axis *axis(int n)
