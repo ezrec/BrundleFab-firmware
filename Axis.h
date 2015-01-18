@@ -30,11 +30,10 @@
 class Axis {
   private:
     int32_t _target, _velocity;
-    bool _enabled, _valid;
+    bool _enabled, _valid, _updated;
 
   public:
-    Axis() { _enabled = false; _valid = false; _target = 0; _velocity = 0; }
-    ~Axis() {}
+    Axis() {}
 
     virtual const float mm_to_position() { return 100.0; }
 
@@ -48,7 +47,16 @@ class Axis {
       _valid = true;
       target_set(pos);
     }
-    virtual bool update() { return false; }
+
+    virtual bool update()
+    {
+        if (!_updated) {
+            _updated = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
 
     virtual void motor_enable(bool enabled = true)
     {
@@ -76,6 +84,7 @@ class Axis {
             velocity_set(fabsf((pos - _target) / time_min));
 
         _target = pos;
+        _updated = false;
     }
     virtual int32_t target_get(void) { return _target; }
 
