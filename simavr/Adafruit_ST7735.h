@@ -22,6 +22,8 @@
 
 #include <SDL.h>
 
+#include "main.h"
+
 // some flags for initR() :(
 #define INITR_GREENTAB 0x0
 #define INITR_REDTAB   0x1
@@ -63,7 +65,7 @@ class Adafruit_ST7735 : public Adafruit_GFX {
         {
             if (--_lock == 0) {
                 SDL_UnlockSurface(_surface);
-                SDL_Flip(_surface);
+                simavr_update_gui(_surface);
             }
         }
 

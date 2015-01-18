@@ -22,20 +22,41 @@
 
 #include <SDL.h>
 
+#include "main.h"
+
 HardwareSerial Serial;
 SDClass SD;
+
+static struct {
+    SDL_Surface *gui;
+} _update;
+
+void simavr_update_gui(SDL_Surface *surf)
+{
+    _update.gui = surf;
+}
 
 int main(int argc, char **argv)
 {
     bool dead = false;
+    unsigned long update_timeout = millis();
 
     SDL_Init(SDL_INIT_VIDEO);
 
     setup();
     do {
+        unsigned long now = millis();
         SDL_Event ev;
 
         loop();
+
+        if (update_timeout < now) {
+            if (_update.gui) {
+                SDL_Flip(_update.gui);
+                _update.gui = NULL;
+            }
+            update_timeout = now + 57;
+        }
 
         if (SDL_PollEvent(&ev)) {
             if (ev.type == SDL_KEYDOWN) {
