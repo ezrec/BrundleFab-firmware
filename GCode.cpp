@@ -343,11 +343,13 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 void GCode::_block_do(struct gcode_block *blk)
 {
     float dist, time;
-    File tmp_file, *program;
     Stream *out = blk->io->out;
     ToolHead *th;
+#if ENABLE_SD
+    File tmp_file, *program;
 
     program = _cnc->program();
+#endif
 
     switch (blk->code) {
     case 'T':
@@ -402,6 +404,7 @@ void GCode::_block_do(struct gcode_block *blk)
                 case RELATIVE: _cnc->axis(i)->target_move_mm(blk->axis[i], time); break;
                 }
             }
+#if ENABLE_UI
             if (_vis) {
                 float pos[AXIS_MAX];
 
@@ -420,6 +423,7 @@ void GCode::_block_do(struct gcode_block *blk)
                     color = VC_TOOL;
                 _vis->line_to(color, pos);
             }
+#endif
             break;
         case 20: /* G20 - Set units to inches */
             _units_to_mm = 25.4;
@@ -428,6 +432,7 @@ void GCode::_block_do(struct gcode_block *blk)
             _units_to_mm = 1.0;
             break;
         case 28: /* G28 - Re-home */
+#if ENABLE_UI
             if (_vis) {
                 float pos[AXIS_MAX];
                 for (int i = 0; i < AXIS_MAX; i++) {
@@ -438,6 +443,7 @@ void GCode::_block_do(struct gcode_block *blk)
                 }
                 _vis->cursor_to(pos);
             }
+#endif
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (blk->update_mask & GCODE_UPDATE_AXIS(i))
                     _cnc->axis(i)->home_mm(blk->axis[i]);
@@ -461,10 +467,10 @@ void GCode::_block_do(struct gcode_block *blk)
     case 'M':
         switch (blk->cmd) {
         case 0: /* M0 - Stop, regardless of optional stop switch */
-            pause(false);
+            _pause(blk->io, false);
             break;
         case 1: /* M1 - Stop, only if optional stop switch set */
-            pause(true);
+            _pause(blk->io, true);
             break;
         case 17: /* M17 - Enable motors */
             _cnc->motor_enable();
@@ -472,6 +478,7 @@ void GCode::_block_do(struct gcode_block *blk)
         case 18: /* M18 - Disable motors */
             _cnc->motor_disable();
             break;
+#if ENABLE_SD
         case 20: /* M20 - List SD files */
             out->print(" Files: {");
             if (blk->update_mask & GCODE_UPDATE_STRING)
@@ -535,6 +542,7 @@ void GCode::_block_do(struct gcode_block *blk)
                 out->print("1}");
             }
             break;
+#endif /* ENABLE_SD */
         case 111: /* M111 - Set debug */
             if (blk->update_mask & GCODE_UPDATE_S) {
                 int s = (int)blk->s;
@@ -600,23 +608,25 @@ void GCode::update(bool cnc_active)
     /* Serial input is of higher priority than SD input */
     _process_io(&_console);
 
-    /* If paused, wait for the Cycle Start button to be pressed
-     */
-    if (!_file_enable) {
-        if (_cnc->button_get(CNC_BUTTON_CYCLE_START)) {
-            run();
-        } else {
-            return;
-        }
-    }
-
+#if ENABLE_SD
     _process_io(&_program);
+#endif
 }
 
 void GCode::_process_io(struct gcode_io *io)
 {
     struct gcode_block *blk;
     
+    /* If paused, wait for the Cycle Start button to be pressed
+     */
+    if (!_enabled(io)) {
+        if (_cnc->button_get(CNC_BUTTON_CYCLE_START)) {
+            _start(io);
+        } else {
+            return;
+        }
+    }
+
     blk = _block.free;
 
     if (!blk)

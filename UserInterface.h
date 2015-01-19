@@ -18,6 +18,8 @@
 #ifndef USERINTERFACE_H
 #define USERINTERFACE_H
 
+#include "config.h"
+
 #include "Axis.h"
 #include "WindowGFX.h"
 #include "CNC.h"
@@ -55,8 +57,6 @@ class MenuMain : public Menu {
         virtual Menu *update(UserInterface *ui, unsigned long now, enum ui_key key = UI_KEY_NONE);
 };
 
-extern MenuMain UserInterfaceMenuMain;
-
 class UserInterface : public WindowGFX {
     private:
         CNC *_cnc;
@@ -92,32 +92,11 @@ class UserInterface : public WindowGFX {
             return _cnc;
         }
 
-        void begin()
-        {
-            _menu = &UserInterfaceMenuMain;
-            _menu->begin(this);
-            _menu->update(this, 0);
-            _update_time = millis();
-        }
+        void begin();
 
         void clear(const char *title, const char *subtitle = NULL);
 
-        bool update(enum ui_key key = UI_KEY_NONE)
-        {
-            unsigned long now = millis();
-            Menu *prev = _menu;
-
-            if (key != UI_KEY_NONE || now > _update_time) {
-                _menu = _menu->update(this, now, key);
-                if (_menu != prev) {
-                    _menu->begin(this);
-                    _menu->update(this, 0);
-                }
-                _update_time = now + 500;
-            }
-
-            return (_menu != &UserInterfaceMenuMain);
-        }
+        bool update(enum ui_key key = UI_KEY_NONE);
 
         void setTextCursor(int16_t col, int16_t row)
         {

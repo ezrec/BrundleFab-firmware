@@ -28,8 +28,7 @@ clean:
 	rm -rf $(O)/*.o $(O)/*.dep $(TARGETS)
 
 CXXFLAGS = -g3 -I. -Isimavr -I/usr/include/SDL \
-	   -Wall -Werror \
-	   -DAXIS_NULL 
+	   -Wall -Werror
 
 SRCS := $(wildcard simavr/*.cpp) \
         $(wildcard *.cpp)

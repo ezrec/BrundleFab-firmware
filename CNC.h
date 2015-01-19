@@ -18,6 +18,8 @@
 #ifndef CNC_H
 #define CNC_H
 
+#include "config.h"
+
 #include "Axis.h"
 #include "ToolHead.h"
 
@@ -40,7 +42,9 @@ class CNC {
         char _message[CNC_MESSAGE_MAX];
         bool _message_updated;
 
+#if ENABLE_SD
         File _program;
+#endif
 
     public:
         CNC(Axis *x, Axis *y, Axis *z, Axis *e, ToolHead *t)
@@ -52,9 +56,15 @@ class CNC {
             _toolhead = t;
         }
 
-        void begin(const char *filename = NULL)
+        void begin()
+        {
+        }
+
+#if ENABLE_SD
+        void begin(const char *filename)
         {
             program_set(filename);
+            begin();
         }
 
         bool program_set(const char *filename)
@@ -95,6 +105,7 @@ class CNC {
         {
             return &_program;
         }
+#endif
 
         Axis *axis(int n)
         {

@@ -15,64 +15,83 @@
  *
  */
 
+#include "config.h"
+
 #include <Arduino.h>
 #include <Wire.h>
+#if ENABLE_SD
 #include <SD.h>
-
-#include <Adafruit_ST7735.h>
+#endif
 
 #include "GCode.h"
-
 #include "Axis.h"
+#include "ToolHead.h"
+
+#include "pinout.h"
+
+#if ENABLE_UI
+#include <Adafruit_ST7735.h>
+#include "Adafruit_Joystick.h"
+#include "UserInterface.h"
+#include "Visualize.h"
+#endif
+
+#if ENABLE_CNC
 #include "Axis_X.h"
 #include "Axis_Y.h"
 #include "Axis_Z.h"
 #include "Axis_E.h"
 
-#include "ToolHead.h"
 #include "ToolInk.h"
 #include "ToolFuser.h"
+#endif
 
-#include "UserInterface.h"
-#include "Visualize.h"
-
-#include "Adafruit_Joystick.h"
-
+#if ENABLE_CNC
 Adafruit_MotorShield AFMS;
 
-Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
-
-ToolHead tools;
 ToolInk toolInk_Black;
 ToolFuser toolFuser = ToolFuser(FUSER_ENABLE);
-#ifdef AXIS_NULL
-Axis axisX;
-Axis axisY;
-Axis axisZ;
-Axis axisE;
-#else
+
 Axis_X axisX;
 Axis_Y axisY;
 Axis_Z axisZ;
 Axis_E axisE;
+#else
+Tool toolInk_Black;
+Tool toolFuser;
+Axis axisX;
+Axis axisY;
+Axis axisZ;
+Axis axisE;
 #endif
+
+ToolHead tools;
+CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
+
+#if ENABLE_UI
+Adafruit_Joystick joy = Adafruit_Joystick(JOY_PIN);
+
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
 
 Visualize vis = Visualize(&tft, ST7735_TFTWIDTH, ST7735_TFTHEIGHT_18 - 5*8,
                                 0, 5 * 8);
 
-CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
-
 UserInterface ui = UserInterface(&cnc, &tft, ST7735_TFTWIDTH, 5*8, 0, 0);
 
 GCode gcode = GCode(&Serial, &cnc, &vis);
-
-Adafruit_Joystick joy = Adafruit_Joystick(JOY_PIN);
+#else
+GCode gcode = GCode(&Serial, &cnc);
+#endif
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(1000000);
+#if ENABLE_CNC
     AFMS.begin(1000);
+#endif
+#if ENABLE_SD
     SD.begin(SD_CS);
+#endif
 
     toolInk_Black.begin();
     toolFuser.begin();
@@ -81,6 +100,7 @@ void setup()
     tools.attach(TOOL_FUSER, &toolFuser);
     tools.begin();
 
+#if ENABLE_UI
     tft.initR(TFT_INITR);
 
     ui.color_set(UI_COLOR_BACKGROUND, ST7735_WHITE);
@@ -95,6 +115,7 @@ void setup()
     vis.color_set(VC_FEED, ST7735_YELLOW);
     vis.color_set(VC_TOOL, ST7735_WHITE);
     vis.clear(175, 260, 175);
+#endif
 
     axisX.begin();
     axisY.begin();
@@ -103,11 +124,16 @@ void setup()
 
     gcode.begin();
 
+#if ENABLE_SD
     cnc.begin("start.gco");
+#else
+    cnc.begin();
+#endif
 }
 
 static unsigned long next_update = millis();
 
+#if ENABLE_UI
 static enum ui_key keymap(int joy)
 {
     static int last_joy = AFJOYSTICK_NONE;
@@ -127,9 +153,11 @@ static enum ui_key keymap(int joy)
 
     return UI_KEY_NONE;
 }
+#endif
 
 void loop()
 {
+#if ENABLE_UI
     enum ui_key key;
     bool cnc_active, ui_active;
 
@@ -145,6 +173,9 @@ void loop()
 
     if (!ui_active)
         gcode.update(cnc_active);
+#else
+    gcode.update(cnc.update());
+#endif
 }
 
 /* vim: set shiftwidth=4 expandtab:  */

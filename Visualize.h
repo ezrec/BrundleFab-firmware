@@ -108,8 +108,6 @@ class Visualize : public WindowGFX {
             _color[color_ndx] = color;
         }
 
-        void render(struct gcode_block *blk);
-
         void cursor_to(const float *pos)
         {
             for (int i = 0; i < AXIS_MAX; i++)

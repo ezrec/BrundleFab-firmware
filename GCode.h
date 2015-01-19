@@ -18,6 +18,8 @@
 #ifndef GCODE_H
 #define GCODE_H
 
+#include "config.h"
+
 #include <limits.h>
 #ifndef PATH_MAX
 #define PATH_MAX        256
@@ -43,6 +45,7 @@ struct gcode_line {
 };
 
 struct gcode_io {
+    bool enable;
     struct gcode_line line;
     Stream *in, *out;
 };
@@ -92,7 +95,10 @@ class GCode {
         bool _file_enable;
         float _offset[AXIS_MAX];
 
-        struct gcode_io _console, _program;
+        struct gcode_io _console;
+#if ENABLE_SD
+        struct gcode_io _program;
+#endif
         struct {
             struct gcode_block ring[GCODE_QUEUE_MAX];
             struct gcode_block *free;
@@ -126,15 +132,17 @@ class GCode {
 
             _debug = &_null;
 
+            _console.enable = true;
             _console.in = _stream;
             _console.out = _stream;
 
             _console.out->println("start");
 
-            _file_enable = true;
-
+#if ENABLE_SD
+            _program.enable = true;
             _program.in = _cnc->program();
             _program.out = &_null;
+#endif
 
             for (int i = 0; i < GCODE_QUEUE_MAX - 1; i++) {
                 _block.ring[i].next = &_block.ring[i+1];
@@ -146,21 +154,7 @@ class GCode {
 
         void update(bool cnc_active);
 
-        void pause(bool check_switch = false)
-        {
-            if (check_switch)
-                if (_cnc->switch_get(CNC_SWITCH_OPTIONAL_STOP) == 0)
-                    return;
-
-            _file_enable = false;
-        }
-
-        void run()
-        {
-            if (!_file_enable)
-                _file_enable = true;
-        }
-
+#if ENABLE_SD
         bool file_select(const char *filename, bool start = false)
         {
             bool opened;
@@ -178,19 +172,49 @@ class GCode {
 
         void file_start()
         {
-            _file_enable = true;
+            
+            _start(&_program);
         }
 
         void file_stop()
         {
-            _file_enable = false;
+            _stop(&_program);
         }
+#endif
 
     private:
         void _block_do(struct gcode_block *blk);
         bool _line_parse(struct gcode_line *line, struct gcode_block *blk);
         void _process_io(struct gcode_io *io);
         void _process_block(struct gcode_block *blk);
+
+        bool _enabled(struct gcode_io *io)
+        {
+            return io->enable;
+        }
+
+        void _pause(struct gcode_io *io, bool check_switch = false)
+        {
+            if (!io->enable)
+                return;
+
+            if (check_switch)
+                if (_cnc->switch_get(CNC_SWITCH_OPTIONAL_STOP) == 0)
+                    return;
+
+            io->enable = false;
+        }
+
+        void _start(struct gcode_io *io)
+        {
+            io->enable = true;
+        }
+
+        void _stop(struct gcode_io *io)
+        {
+            io->enable = false;
+        }
+
 };
 
 #endif /* GCODE_H */

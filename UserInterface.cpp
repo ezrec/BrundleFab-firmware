@@ -19,6 +19,8 @@
 
 #include "UserInterface.h"
 
+static MenuMain UserInterfaceMenuMain;
+
 static const float menu_axis_incr[] = {
     -100.0,
     -10.0,
@@ -157,8 +159,9 @@ class MenuAxis : public Menu {
         }
 };
 
-MenuAxis UserInterfaceMenuAxis;
+static MenuAxis UserInterfaceMenuAxis;
 
+#if ENABLE_SD
 class MenuSD : public Menu {
     private:
         File _file;
@@ -352,7 +355,33 @@ class MenuSD : public Menu {
         }
 };
 
-MenuSD UserInterfaceMenuSD;
+static MenuSD UserInterfaceMenuSD;
+#endif /* ENABLE_SD */
+
+void UserInterface::begin()
+{
+    _menu = &UserInterfaceMenuMain;
+    _menu->begin(this);
+    _menu->update(this, 0);
+    _update_time = millis();
+}
+
+bool UserInterface::update(enum ui_key key)
+{
+    unsigned long now = millis();
+    Menu *prev = _menu;
+
+    if (key != UI_KEY_NONE || now > _update_time) {
+        _menu = _menu->update(this, now, key);
+        if (_menu != prev) {
+            _menu->begin(this);
+            _menu->update(this, 0);
+        }
+        _update_time = now + 500;
+    }
+
+    return (_menu != &UserInterfaceMenuMain);
+}
 
 void UserInterface::clear(const char *title, const char *subtitle)
 {
@@ -395,8 +424,10 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
         case UI_KEY_SELECT:
             ui->cnc()->button_set(CNC_BUTTON_CYCLE_START);
             break;
+#if ENABLE_SD
         case UI_KEY_RIGHT:
             return &UserInterfaceMenuSD;
+#endif
         case UI_KEY_LEFT:
             return &UserInterfaceMenuAxis;
         default:
@@ -453,7 +484,5 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
 
     return this;
 }
-
-MenuMain UserInterfaceMenuMain;
 
 /* vim: set shiftwidth=4 expandtab:  */
