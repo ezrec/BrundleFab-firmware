@@ -281,8 +281,11 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     }
 
     for (i = 0; i < AXIS_MAX; i++) {
-        if (state.update_mask & GCODE_UPDATE_AXIS(i))
+        if (state.update_mask & GCODE_UPDATE_AXIS(i)) {
             state.axis[i] *= _units_to_mm;
+            if (_positioning == ABSOLUTE)
+                state.axis[i] += _offset[i];
+        }
     }
     if (state.update_mask & GCODE_UPDATE_F)
         state.f *= _units_to_mm;
@@ -342,7 +345,6 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
 
 void GCode::_block_do(struct gcode_block *blk)
 {
-    float dist, time;
     Stream *out = blk->io->out;
     ToolHead *th;
 #if ENABLE_SD
@@ -370,40 +372,29 @@ void GCode::_block_do(struct gcode_block *blk)
     case 'G':
         switch (blk->cmd) {
         case 0: /* G0 - Uncontrolled move */
+            switch (_positioning) {
+            case ABSOLUTE:
+                _cnc->target_set_mm(blk->axis, blk->update_mask);
+                break;
+            case RELATIVE:
+                _cnc->target_move_mm(blk->axis, blk->update_mask);
+                break;
+            }
+
+            break;
         case 1: /* G1 - Controlled move */
             if (blk->update_mask & GCODE_UPDATE_F)
                 _feed_rate = blk->f * _units_to_mm;
 
-            if (blk->cmd == 1) {
-                dist = 0.0;
-                for (int i = 0; i < AXIS_MAX; i++) {
-                    if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
-                        continue;
-
-                    float delta = blk->axis[i];
-
-                    switch (_positioning) {
-                    case ABSOLUTE: delta -= _offset[i] + _cnc->axis(i)->target_get_mm();
-                    case RELATIVE: break;
-                    }
-
-                    dist += delta * delta;
-                }
-
-                time = sqrt(dist) / _feed_rate;
-            } else {
-                time = -1;
+            switch (_positioning) {
+            case ABSOLUTE:
+                _cnc->target_set_mm_rate(blk->axis, blk->update_mask, _feed_rate);
+                break;
+            case RELATIVE:
+                _cnc->target_move_mm_rate(blk->axis, blk->update_mask, _feed_rate);
+                break;
             }
 
-            for (int i = 0; i < AXIS_MAX; i++) {
-                if (!(blk->update_mask & GCODE_UPDATE_AXIS(i)))
-                    continue;
-
-                switch (_positioning) {
-                case ABSOLUTE: _cnc->axis(i)->target_set_mm(blk->axis[i] + _offset[i], time); break;
-                case RELATIVE: _cnc->axis(i)->target_move_mm(blk->axis[i], time); break;
-                }
-            }
 #if ENABLE_UI
             if (_vis) {
                 float pos[AXIS_MAX];

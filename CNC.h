@@ -60,6 +60,59 @@ class CNC {
         {
         }
 
+        void target_move_mm(float *pos, uint8_t axis_mask, unsigned long ms = 0)
+        {
+            for (int i = 0; i < AXIS_MAX; i++) {
+                if (axis_mask & (1 << i))
+                    _axis[i]->target_move_mm(pos[i], ms);
+            }
+        }
+
+        void target_set_mm(float *pos, uint8_t axis_mask, unsigned long ms = 0)
+        {
+            for (int i = 0; i < AXIS_MAX; i++) {
+                if (axis_mask & (1 << i))
+                    _axis[i]->target_set_mm(pos[i], ms);
+            }
+        }
+
+        void target_move_mm_rate(float *pos, uint8_t axis_mask, float feed_rate)
+        {
+            float dist = 0.0;
+
+            for (int i = 0; i < AXIS_MAX; i++) {
+                if (axis_mask & (1 << i))
+                    dist += pos[i] * pos[i];
+            }
+
+            unsigned long ms = sqrt(dist) / feed_rate * 60000.0;
+
+            target_move_mm(pos, axis_mask, ms);
+        }
+
+        void target_set_mm_rate(float *pos, uint8_t axis_mask, float feed_rate)
+        {
+            float dist = 0.0;
+
+            for (int i = 0; i < AXIS_MAX; i++) {
+                if (axis_mask & (1 << i)) {
+                    float delta = pos[i] - _axis[i]->target_get_mm();
+                    dist += delta * delta;
+                }
+            }
+
+            unsigned long ms = sqrt(dist) / feed_rate * 60000.0;
+
+            target_set_mm(pos, axis_mask, ms);
+        }
+
+        void target_get_mm(float *pos)
+        {
+            for (int i = 0; i < AXIS_MAX; i++)
+                pos[i] = _axis[i]->target_get_mm();
+        }
+
+
 #if ENABLE_SD
         void begin(const char *filename)
         {
@@ -132,12 +185,6 @@ class CNC {
         void motor_disable()
         {
             motor_enable(false);
-        }
-
-        void target_get_mm(float *pos)
-        {
-            for (int i = 0; i < AXIS_MAX; i++)
-                pos[i] = _axis[i]->target_get_mm();
         }
 
         void sleep()
