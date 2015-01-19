@@ -179,6 +179,7 @@ class Axis_DCEncoder : public Axis {
                 break;
             case HOMING_STALL:
                 _homing.timeout = millis()+10;
+                _homing.position = pos;
                 _mode = HOMING_STALL_QUIESCE;
                 break;
             case HOMING_STALL_QUIESCE:
