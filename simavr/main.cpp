@@ -15,6 +15,8 @@
  *
  */
 
+#include <sys/time.h>
+
 #include "Arduino.h"
 
 #include <HardwareSerial.h>
@@ -26,6 +28,16 @@
 
 HardwareSerial Serial;
 SDClass SD;
+unsigned long _micros;
+
+static unsigned long msec(void)
+{
+    struct timeval tv;
+
+    gettimeofday(&tv, NULL);
+
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
 
 static struct {
     SDL_Surface *gui;
@@ -39,15 +51,16 @@ void simavr_update_gui(SDL_Surface *surf)
 int main(int argc, char **argv)
 {
     bool dead = false;
-    unsigned long update_timeout = millis();
+    unsigned long update_timeout = msec();
 
     SDL_Init(SDL_INIT_VIDEO);
 
     setup();
     do {
-        unsigned long now = millis();
+        unsigned long now = msec();
         SDL_Event ev;
 
+        _micros+=137;
         loop();
 
         if (update_timeout < now) {

@@ -26,5 +26,7 @@ void simavr_update_gui(SDL_Surface *surf);
 
 };
 
+extern unsigned long _micros;
+
 #endif /* SIMAVR_MAIN_H */
 /* vim: set shiftwidth=4 expandtab:  */
