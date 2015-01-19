@@ -85,7 +85,7 @@ GCode gcode = GCode(&Serial, &cnc);
 
 void setup()
 {
-    Serial.begin(1000000);
+    Serial.begin(SERIAL_SPEED);
 #if ENABLE_CNC
     AFMS.begin(1000);
 #endif
