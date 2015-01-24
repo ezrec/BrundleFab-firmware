@@ -1,6 +1,16 @@
 
 BrundleFab - A Prototype Poweder Bed Printer
 
+Hardware shield stack
+---------------------
+
+Arduino Mega2560
+AdaFruit MotorShield v2 	SCL, SDA
+InkShield			2, A0, A1, A2, A3
+Adafruit MotorShield v1		3, 4, 5, 6, 7, 8, 9, 10, 11, 12
+AdaFruit ST7735			45, 47, 49, 50, 51, 52, 53, A4
+
+
 Axes & Tools
 ------------
 
