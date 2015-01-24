@@ -131,8 +131,6 @@ void setup()
 #endif
 }
 
-static unsigned long next_update = millis();
-
 #if ENABLE_UI
 static enum ui_key keymap(int joy)
 {
