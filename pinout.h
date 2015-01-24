@@ -55,6 +55,7 @@
 #define ESTP_MAX                -1      /* Endstop (Maximim) */
 
 #define FUSER_ENABLE            43      /* Heater enable */
+#define FUSER_TEMP              5       /* Thermistor on A5 */
 
 #endif /* PINOUT_H */
 /* vim: set shiftwidth=4 expandtab:  */
