@@ -104,13 +104,13 @@ class Axis_DCEncoder : public Axis {
                 _mode = HOMING_STOP;
                 _homing.pin = _pinStopMin;
                 _homing.dir = BACKWARD;
-                _homing.home = _minPos;
+                _homing.home = _minPos - _overshoot;
                 _homing.pwm = _pwmMaximum;
             } else if (_pinStopMax >= 0) {
                 _mode = HOMING_STOP;
                 _homing.pin = _pinStopMax;
                 _homing.dir = FORWARD;
-                _homing.home = _maxPos;
+                _homing.home = _maxPos + _overshoot;
                 _homing.pwm = _pwmMaximum;
             } else {
                 _mode = HOMING_STALL;
@@ -239,6 +239,7 @@ class Axis_DCEncoder : public Axis {
                 if (_pinStopMin >= 0 && digitalRead(_pinStopMin) == 1) {
                     if (tar <= pos) {
                         _mode = IDLE;
+                        _encoder.write(_minPos);
                         motor_halt();
                         break;
                     }
@@ -247,6 +248,7 @@ class Axis_DCEncoder : public Axis {
                 if (_pinStopMax >= 0 && digitalRead(_pinStopMax) == 1) {
                     if (tar >= pos) {
                         _mode = IDLE;
+                        _encoder.write(_maxPos);
                         motor_halt();
                         break;
                     }
