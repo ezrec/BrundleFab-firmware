@@ -42,6 +42,8 @@ class CNC {
         char _message[CNC_MESSAGE_MAX];
         bool _message_updated;
 
+        Stream *_serial[4];
+
 #if ENABLE_SD
         File _program;
 #endif
@@ -59,6 +61,23 @@ class CNC {
         void begin()
         {
         }
+
+        void serial_set(int id, Stream *stream)
+        {
+            if (id < 0 || id >= (int)ARRAY_SIZE(_serial))
+                return;
+
+            _serial[id] = stream;
+        }
+
+        Stream *serial_get(int id = 0)
+        {
+            if (id < 0 || id >= (int)ARRAY_SIZE(_serial))
+                return NULL;
+
+            return _serial[id];
+        }
+
 
         void target_move_mm(float *pos, uint8_t axis_mask, unsigned long ms = 0)
         {

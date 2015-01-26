@@ -14,5 +14,8 @@
 #define SERIAL_SPEED            115200
 //#define SERIAL_SPEED            1000000 /* 1Mbit */
 
+
+#define ARRAY_SIZE(x)           (sizeof(x)/sizeof((x)[0]))
+
 #endif /* CONFIG_H */
 /* vim: set shiftwidth=4 expandtab:  */

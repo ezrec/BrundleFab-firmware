@@ -86,6 +86,7 @@ GCode gcode = GCode(&Serial, &cnc);
 void setup()
 {
     Serial.begin(SERIAL_SPEED);
+    Serial3.begin(SERIAL_SPEED);
 #if ENABLE_CNC
     AFMS.begin(1000);
 #endif
@@ -123,6 +124,9 @@ void setup()
     axisE.begin();
 
     gcode.begin();
+
+    cnc.serial_set(0, &Serial3);
+    cnc.serial_set(1, &Serial); // for testing M199
 
 #if ENABLE_SD
     cnc.begin("start.gco");

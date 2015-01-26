@@ -133,7 +133,11 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
                     state.cmd == 30 ||
                     state.cmd == 32 ||
                     state.cmd == 36 ||
-                    state.cmd == 117)) {
+                    state.cmd == 117 ||
+                    state.cmd == 490 ||
+                    state.cmd == 491 ||
+                    state.cmd == 492 ||
+                    state.cmd == 493 )) {
             if (!(state.update_mask & GCODE_UPDATE_STRING)) {
                 state.update_mask |= GCODE_UPDATE_STRING;
                 mode = STRING;
@@ -567,6 +571,25 @@ void GCode::_block_do(struct gcode_block *blk)
             break;
         case 124: /* M124 - Immediate motor stop */
             _cnc->stop();
+            break;
+        case 490: /* M490 - Send message to serial bus 0 */
+        case 491: /* M491 - Send message to serial bus 1 */
+        case 492: /* M492 - Send message to serial bus 2 */
+        case 493: /* M493 - Send message to serial bus 3 */
+            Stream *s;
+            s = _cnc->serial_get(blk->cmd - 490);
+            if (s) {
+                s->write(blk->string);
+                out->print(' ');
+                while (s->available()) {
+                    char c = s->read();
+                    if (c == '\n')
+                        continue;
+                    if (c == '\r')
+                        c = '.';
+                    out->print(c);
+                }
+            }
             break;
         default:
             break;

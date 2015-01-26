@@ -58,6 +58,10 @@ M114				Get current position
 M115				Get firmware version
 M117 message			Display message
 M124				Emergency stop
+M490 message			Send message to CNC peripheral serial bus 0
+M491 message			Send message to CNC peripheral serial bus 1
+M492 message			Send message to CNC peripheral serial bus 2
+M493 message			Send message to CNC peripheral serial bus 3
 
 T0				Select null tool
 T1 Pn Qn Rn Sn			Select ink tool
