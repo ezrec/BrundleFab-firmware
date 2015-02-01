@@ -21,9 +21,6 @@
 #define TOOL_INK_BLACK          1
 #define TOOL_FUSER              20
 
-#define INKSHIELD_PULSE         2       /* D2 */
-#define INKSHIELD_CLASS         InkShieldA0A3
-
 #define TFT_DC                  45      /* D45 */
 #define TFT_RST                 47      /* D47 */
 #define TFT_CS                  49      /* D49 */
@@ -36,15 +33,9 @@
 
 #define X_MOTOR                 3       /* AFMotor M3 */
 #define XENC_A                  18      /* Encoder A */
-#define XENC_B                  27      /* Encoder B */
+#define XENC_B                  19      /* Encoder B */
 #define XSTP_MIN                35      /* Endstop (minimum) */
 #define XSTP_MAX                33      /* Encstop (maximum) */
-
-#define Y_MOTOR                 4       /* AFMotor M4 */
-#define YENC_A                  19      /* Encoder A */
-#define YENC_B                  29      /* Encoder B */
-#define YSTP_MIN                -1
-#define YSTP_MAX                -1
 
 #define Z_MOTOR                 2       /* Adafruit_MotorShield M2 */
 #define ZSTP_MIN                -1      /* Endstop (Minimim) */
@@ -55,7 +46,6 @@
 #define ESTP_MAX                -1      /* Endstop (Maximim) */
 
 #define FUSER_ENABLE            43      /* Heater enable */
-#define FUSER_TEMP              5       /* Thermistor on A5 */
 
 #endif /* PINOUT_H */
 /* vim: set shiftwidth=4 expandtab:  */

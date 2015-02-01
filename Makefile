@@ -4,6 +4,7 @@ BOARD_TAG    = mega2560
 ISP_PORT = /dev/ttyACM0
 MONITOR_PORT = /dev/ttyACM0
 
+MONITOR_BAUDRATE = 115200
 ARDMK_DIR=/usr/share/arduino
 
 CXXFLAGS = -DMICROSTEPS=16 -Wno-deprecated-declarations

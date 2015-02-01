@@ -1,15 +1,23 @@
 
 BrundleFab - A Prototype Poweder Bed Printer
 
-Hardware shield stack
----------------------
+Controller Shield Stack
+-----------------------
 
 Arduino Mega2560
 AdaFruit MotorShield v2 	SCL, SDA
-InkShield			2, A0, A1, A2, A3
 Adafruit MotorShield v1		3, 4, 5, 6, 7, 8, 9, 10, 11, 12
 AdaFruit ST7735			45, 47, 49, 50, 51, 52, 53, A4
 
+Connections
+-----------
+
+Axis X:
+	
+
+Prinhead Shield Stack
+--------------------
+See https://github.com/ezrec/BrundleFab-printhead
 
 Axes & Tools
 ------------
@@ -68,7 +76,7 @@ T1 Pn Qn Rn Sn			Select ink tool
 				  P: bitmap (bits 23..0) of nozzle
 				  Q: bitmap (bits 47..24) of nozzle
 				  R: bitmap (bits 71..48) of nozzle
-				  S: Spray rate (dots / minute)
+				  S: Spray density (dots / mm)
 T2 .. T16			Additional ink heads
 T20				Select heat lamp tool
 

@@ -38,22 +38,22 @@
 
 #if ENABLE_CNC
 #include "Axis_X.h"
-#include "Axis_Y.h"
 #include "Axis_Z.h"
 #include "Axis_E.h"
 
-#include "ToolInk.h"
+#include "InkBar.h"
 #include "ToolFuser.h"
 #endif
 
 #if ENABLE_CNC
 Adafruit_MotorShield AFMS;
 
-ToolInk toolInk_Black;
-ToolFuser toolFuser = ToolFuser(FUSER_ENABLE);
+/* 9", 96 DPI */
+InkBar inkBar(&Serial3, 0, 25.4 * 9.0, 96.0 / 25.4);
+Tool toolFuser; /* This tool is part of the inkBar, and is always on */
 
 Axis_X axisX;
-Axis_Y axisY;
+Axis axisY;
 Axis_Z axisZ;
 Axis_E axisE;
 #else
@@ -66,7 +66,7 @@ Axis axisE;
 #endif
 
 ToolHead tools;
-CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
+CNC cnc = CNC(&axisX, (Axis *)&inkBar, &axisZ, &axisE, &tools);
 
 #if ENABLE_UI
 Adafruit_Joystick joy = Adafruit_Joystick(JOY_PIN);
@@ -94,10 +94,9 @@ void setup()
     SD.begin(SD_CS);
 #endif
 
-    toolInk_Black.begin();
-    toolFuser.begin();
+    inkBar.begin();
 
-    tools.attach(TOOL_INK_BLACK, &toolInk_Black);
+    tools.attach(TOOL_INK_BLACK, (Tool *)&inkBar);
     tools.attach(TOOL_FUSER, &toolFuser);
     tools.begin();
 
@@ -119,14 +118,10 @@ void setup()
 #endif
 
     axisX.begin();
-    axisY.begin();
     axisZ.begin();
     axisE.begin();
 
     gcode.begin();
-
-    cnc.serial_set(0, &Serial3);
-    cnc.serial_set(1, &Serial); // for testing M199
 
 #if ENABLE_SD
     cnc.begin("start.gco");

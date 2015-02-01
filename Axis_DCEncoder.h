@@ -85,8 +85,8 @@ class Axis_DCEncoder : public Axis {
 
         virtual void begin()
         {
-            pinMode(_pinEncoderA, INPUT_PULLUP);
-            pinMode(_pinEncoderB, INPUT_PULLUP);
+            pinMode(_pinEncoderA, INPUT);
+            pinMode(_pinEncoderB, INPUT);
             if (_pinStopMin >= 0)
                 pinMode(_pinStopMin, INPUT_PULLUP);
             if (_pinStopMax >= 0)

@@ -104,9 +104,9 @@ class ToolHead : Tool {
             return _tool->active();
         }
 
-        virtual void update(void)
+        virtual bool update(void)
         {
-            _tool->update();
+            return _tool->update();
         }
 
         virtual void parm(enum parm_e p, float val = 0.0)

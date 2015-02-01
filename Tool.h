@@ -50,8 +50,9 @@ class Tool {
             return _active;
         }
 
-        virtual void update(void)
+        virtual bool update(void)
         {
+            return _active;
         }
 
         virtual void parm(enum parm_e p, float val = 0.0)
