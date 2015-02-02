@@ -1,5 +1,10 @@
 # Arduino Make file. Refer to https://github.com/sudar/Arduino-Makefile
 
+# For the RAMPS 1.4 electronics
+SHIELD_TAG   = ramps
+# For the BrundleFab protoboard
+#SHIELD_TAG   = brundle
+
 BOARD_TAG    = mega2560
 ISP_PORT = /dev/ttyACM0
 MONITOR_PORT = /dev/ttyACM0
@@ -22,5 +27,5 @@ ARDUINO_LIBS = Adafruit_MotorShield \
 
 -include $(ARDMK_DIR)/Arduino.mk
 
-EXTRA_FLAGS = -Wall -Werror
+EXTRA_FLAGS = -Wall -Werror -DSHIELD_$(SHIELD_TAG)
 # !!! Important. You have to use make ispload to upload when using ISP programmer

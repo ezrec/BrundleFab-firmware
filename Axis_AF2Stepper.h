@@ -25,15 +25,15 @@
 
 extern Adafruit_MotorShield AFMS;
 
-class Axis_AFStepper : public Axis {
+class Axis_AF2Stepper : public Axis {
     private:
         int _adaMotor; /* 1 = M1/M2, 2 = M3/M4 */
-        static const int _stepsPerRotation = 200; /* 1.8 degrees */
-        static const float _mmPerRotation = 4.0;  /* 4mm pitch */
+        int _stepsPerRotation;
+        float _mmPerRotation;
         int _pinStopMin;
         int _pinStopMax;
 
-        static const int _maxPos = 10000;
+        int _maxPos;
         static const int _minPos = 0;
 
         float _mm_to_position;
@@ -59,9 +59,15 @@ class Axis_AFStepper : public Axis {
         } _moving;
 
     public:
-        Axis_AFStepper(int af_motor, int pinStopMin = -1, int pinStopMax = -1) : Axis()
+        Axis_AF2Stepper(int af_motor, int pinStopMin, int pinStopMax,
+                        unsigned int maxPos,
+                        unsigned int stepsPerRotation, float mmPerRotation)
+            : Axis()
         {
             _adaMotor = af_motor;
+            _maxPos = maxPos;
+            _stepsPerRotation = stepsPerRotation;
+            _mmPerRotation = mmPerRotation;
             _motor = AFMS.getStepper(_stepsPerRotation, _adaMotor);
             _mm_to_position = _stepsPerRotation / _mmPerRotation;
             _pinStopMin = pinStopMin;
@@ -80,15 +86,7 @@ class Axis_AFStepper : public Axis {
             }
         }
 
-        virtual void begin()
-        {
-            _motor->setSpeed(100);       /* 100 RPM */
-            if (_pinStopMin >= 0)
-                pinMode(_pinStopMin, INPUT_PULLUP);
-            if (_pinStopMax >= 0)
-                pinMode(_pinStopMax, INPUT_PULLUP);
-            Axis::begin();
-        }
+        virtual void begin();
 
         virtual void home(int32_t position)
         {
@@ -212,5 +210,5 @@ class Axis_AFStepper : public Axis {
 };
 
 
-#endif /* AXIS_AFSTEPPER_H */
+#endif /* AXIS_AF2STEPPER_H */
 /* vim: set shiftwidth=4 expandtab:  */

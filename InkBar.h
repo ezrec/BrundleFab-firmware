@@ -37,7 +37,7 @@
 class InkBar : public Tool, public Axis {
     private:
         static const int DEBUG = 0;
-        Stream *_io;
+        HardwareSerial *_io;
         float _mm_min, _mm_max;
         float _dotlines_per_mm;
         int32_t _dotline;
@@ -58,7 +58,7 @@ class InkBar : public Tool, public Axis {
         } _response;
 
     public:
-        InkBar(Stream *io, float mm_min, float mm_max, float dotlines_per_mm)
+        InkBar(HardwareSerial *io, float mm_min, float mm_max, float dotlines_per_mm)
         {
             _io = io;
             _mm_min = mm_min;
@@ -71,6 +71,8 @@ class InkBar : public Tool, public Axis {
         void begin()
         {
             bool done = false;
+
+            _io->begin(115200);
 
             /* Attempt to communicate with the device */
             do {

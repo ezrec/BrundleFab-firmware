@@ -37,36 +37,35 @@
 #endif
 
 #if ENABLE_CNC
-#include "Axis_X.h"
-#include "Axis_Z.h"
-#include "Axis_E.h"
+#include "Axis_DCEncoder.h"
+#include "Axis_AF1Stepper.h"
+#include "Axis_AF2Stepper.h"
+#include "Axis_A4988.h"
 
 #include "InkBar.h"
 #include "ToolFuser.h"
 #endif
 
 #if ENABLE_CNC
-Adafruit_MotorShield AFMS;
+X_MOTOR(axisX);
+Y_MOTOR(axisY);
+Z_MOTOR(axisZ);
+E_MOTOR(axisE);
 
-/* 9", 96 DPI */
-InkBar inkBar(&Serial3, 0, 25.4 * 9.0, 96.0 / 25.4);
 Tool toolFuser; /* This tool is part of the inkBar, and is always on */
 
-Axis_X axisX;
-Axis axisY;
-Axis_Z axisZ;
-Axis_E axisE;
 #else
-Tool toolInk_Black;
-Tool toolFuser;
 Axis axisX;
 Axis axisY;
 Axis axisZ;
 Axis axisE;
+
+Tool toolInk_Black;
+Tool toolFuser;
 #endif
 
 ToolHead tools;
-CNC cnc = CNC(&axisX, (Axis *)&inkBar, &axisZ, &axisE, &tools);
+CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
 
 #if ENABLE_UI
 Adafruit_Joystick joy = Adafruit_Joystick(JOY_PIN);
@@ -86,17 +85,11 @@ GCode gcode = GCode(&Serial, &cnc);
 void setup()
 {
     Serial.begin(SERIAL_SPEED);
-    Serial3.begin(SERIAL_SPEED);
-#if ENABLE_CNC
-    AFMS.begin(1000);
-#endif
 #if ENABLE_SD
     SD.begin(SD_CS);
 #endif
 
-    inkBar.begin();
-
-    tools.attach(TOOL_INK_BLACK, (Tool *)&inkBar);
+    tools.attach(TOOL_INK_BLACK, (Tool *)&axisY);
     tools.attach(TOOL_FUSER, &toolFuser);
     tools.begin();
 
@@ -118,6 +111,7 @@ void setup()
 #endif
 
     axisX.begin();
+    axisY.begin();
     axisZ.begin();
     axisE.begin();
 
