@@ -31,20 +31,14 @@
 
 #define SD_CS                   53      /* D53 aka SS_PIN */
 
-#define X_ENC_A                 18      /* Encoder A */
-#define X_ENC_B                 19      /* Encoder B */
 #define X_STP_MIN               35      /* Endstop (minimum) */
 #define X_STP_MAX               33      /* Endstop (maximum) */
-#define X_PWM_MIN               98
-#define X_PWM_MAX               255
-#define X_POS_MIN               0
-#define X_POS_MAX               11500
-#define X_MM_MAX                740.0
-#define X_MOTOR(name)           Axis_DCEncoder name(3, X_PWM_MIN, X_PWM_MAX, \
-                                               X_ENC_A, X_ENC_B, \
-                                               X_STP_MIN, X_STP_MAX, \
-                                               X_MM_MAX, \
-                                               X_POS_MIN, X_POS_MAX)
+#define X_STEP_MAX              10000
+#define X_TURN_STEPS            200     /* Steps/full rotation */
+#define X_TURN_MM               76.0    /* mm/full rotation */
+#define X_MOTOR(name)           Axis_AF1Stepper name(2,  X_STP_MIN, X_STP_MAX, \
+                                               X_STEP_MAX, \
+                                               X_TURN_STEPS, X_TURN_MM)
 
 /* Y is driven by the inkbar  - 9", 96 DPI */
 #define Y_MOTOR(name)           InkBar name(&Serial3,  0, 25.4 * 9.0, 96.0 / 25.4)
