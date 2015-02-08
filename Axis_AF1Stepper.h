@@ -15,23 +15,23 @@
  *
  */
 
-#ifndef AXIS_AF2STEPPER_H
-#define AXIS_AF2STEPPER_H
+#ifndef AXIS_AF1STEPPER_H
+#define AXIS_AF1STEPPER_H
 
 #include <Wire.h>
 #include <AFMotor.h>
 
 #include "Axis.h"
 
-class Axis_AFStepper : public Axis {
+class Axis_AF1Stepper : public Axis {
     private:
-        static const int _stepsPerRotation = 200; /* 1.8 degrees */
-        static const float _mmPerRotation = 4.0;  /* 4mm pitch */
+        int _stepsPerRotation;
+        float _mmPerRotation;
         int _pinStopMin;
         int _pinStopMax;
 
-        static const int _maxPos = 10000;
-        static const int _minPos = 0;
+        int32_t _maxPos;
+        static const int32_t _minPos = 0;
 
         float _mm_to_position;
         int32_t _position;
@@ -57,10 +57,16 @@ class Axis_AFStepper : public Axis {
         } _moving;
 
     public:
-        Axis_AFStepper(int af_motor, int pinStopMin = -1, int pinStopMax = -1) : Axis(), _adaMotor(_stepsPerRotation, af_motor)
+        Axis_AF1Stepper(int af_motor, int pinStopMin, int pinStopMax,
+                        unsigned int maxPos,
+                        unsigned int stepsPerRotation, float mmPerRotation)
+            : Axis(), _adaMotor(stepsPerRotation, af_motor)
         {
             _motor = &_adaMotor;
+            _stepsPerRotation = stepsPerRotation;
+            _mmPerRotation = mmPerRotation;
             _mm_to_position = _stepsPerRotation / _mmPerRotation;
+            _maxPos = maxPos;
             _pinStopMin = pinStopMin;
             _pinStopMax = pinStopMax;
 
@@ -209,5 +215,5 @@ class Axis_AFStepper : public Axis {
 };
 
 
-#endif /* AXIS_AFSTEPPER_H */
+#endif /* AXIS_AF1STEPPER_H */
 /* vim: set shiftwidth=4 expandtab:  */
