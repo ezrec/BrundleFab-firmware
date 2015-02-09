@@ -152,7 +152,7 @@ void loop()
     enum ui_key key;
     bool cnc_active, ui_active;
 
-    cnc_active = cnc.update(millis());
+    cnc_active = cnc.update();
 
     if (!cnc_active) {
         key = keymap(joy.read());

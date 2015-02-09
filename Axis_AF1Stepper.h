@@ -42,7 +42,6 @@ class Axis_AF1Stepper : public Axis_Stepper {
 
         virtual void begin()
         {
-            _motor->setSpeed(100);       /* 100 RPM */
             Axis_Stepper::begin();
         }
 
@@ -53,36 +52,35 @@ class Axis_AF1Stepper : public Axis_Stepper {
             Axis_Stepper::motor_enable(enabled);
         }
 
-        virtual int step(int steps)
+        virtual int step(int32_t steps)
         {
             uint8_t dir;
-            int neg = 1;
+            int neg;
 
             if (!steps)
                 return 0;
 
             if (steps < 0) {
                 dir = BACKWARD;
-                steps = -steps;
                 neg = -1;
+                steps = -steps;
             } else {
                 dir = FORWARD;
+                neg = 1;
             }
 
             if (steps > MICROSTEPS * 2) {
-                int dstep = steps / (MICROSTEPS * 2);
-                _motor->step(dstep, dir, DOUBLE);
-                return neg * dstep * (MICROSTEPS * 2);
+                _motor->onestep(dir, DOUBLE);
+                return neg * (MICROSTEPS * 2);
             }
 
             if (steps > MICROSTEPS) {
-                int sstep = steps / MICROSTEPS;
-                _motor->step(sstep, dir, SINGLE);
-                return neg * sstep * (MICROSTEPS * 2);
+                _motor->onestep(dir, SINGLE);
+                return neg *  MICROSTEPS;
             }
 
-            _motor->step(steps, dir, MICROSTEP);
-            return neg * steps;
+            _motor->onestep(dir, MICROSTEP);
+            return neg;
         }
 };
 

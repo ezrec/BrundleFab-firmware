@@ -273,15 +273,15 @@ class CNC {
                 _switch_mask &= ~mask;
         }
 
-        bool update(unsigned long ms_now)
+        bool update()
         {
             bool motion = false;
 
             for (int i = 0; i < AXIS_MAX; i++)
-                motion |= _axis[i]->update(ms_now);
+                motion |= _axis[i]->update();
 
             if (motion)
-                _toolhead->update(ms_now);
+                _toolhead->update();
 
             return motion;
         }

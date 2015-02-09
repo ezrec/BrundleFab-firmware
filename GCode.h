@@ -124,7 +124,7 @@ class GCode {
             _halted = false;
             _positioning = ABSOLUTE;
             _units_to_mm = 1.0;
-            _feed_rate = 1.0;
+            _feed_rate = 3000.0;        /* mm/minute */
             _offset[AXIS_X] = 0;
             _offset[AXIS_Y] = 0;
             _offset[AXIS_Z] = 0;

@@ -17,7 +17,6 @@ void Axis_AF2Stepper::begin(void)
         AFMS_init = true;
     }
 
-    _motor->setSpeed(100);       /* 100 RPM */
     Axis_Stepper::begin();
 }
 

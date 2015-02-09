@@ -28,128 +28,141 @@
 #define AXIS_E          3
 
 class Axis {
-  private:
-    bool _enabled, _updated;
-    int _pinStopMin;
-    int _pinStopMax;
-  protected:
-    struct {
-        float mm;
-        unsigned long ms;
-        float velocity;
-    } _target;
+    private:
+        bool _enabled, _updated;
+        int _pinStopMin;
+        int _pinStopMax;
+        protected:
+        struct {
+            float mm;
+            unsigned long ms;
+            float velocity;
+        } _target;
 
-  public:
-    enum axis_stop_e { STOP_NONE = 0, STOP_MIN = 1, STOP_MAX = 2 };
+    public:
+        enum axis_stop_e {
+            STOP_NONE = 0,
+            STOP_MIN,
+            STOP_MIN_SWITCH,    /* Ignores soft trip */
+            STOP_MAX,
+            STOP_MAX_SWITCH,    /* Ignores soft trip */
+        };
 
-    /* NOTE: This class assumes that all endstops are
-     *       normally closed switches to ground.
-     */
-    Axis(int pinStopMin = -1, int pinStopMax = -1)
-    {
-        _pinStopMin = pinStopMin;
-        _pinStopMax = pinStopMax;
-    }
-
-    virtual void begin()
-    {
-        if (_pinStopMin >= 0)
-            pinMode(_pinStopMin, INPUT_PULLUP);
-        if (_pinStopMax >= 0)
-            pinMode(_pinStopMax, INPUT_PULLUP);
-        motor_enable(false);
-    }
-
-    bool endstop(enum axis_stop_e select, bool *is_physical = NULL)
-    {
-        int pin = -1;
-
-        switch (select) {
-        case STOP_NONE:
-            break;
-        case STOP_MIN:
-            if (_pinStopMin >= 0)
-                pin = _pinStopMin;
-            break;
-        case STOP_MAX:
-            if (_pinStopMax >= 0)
-                pin = _pinStopMax;
-            break;
+        /* NOTE: This class assumes that all endstops are
+         *       normally closed switches to ground.
+         */
+        Axis(int pinStopMin = -1, int pinStopMax = -1)
+        {
+            _pinStopMin = pinStopMin;
+            _pinStopMax = pinStopMax;
         }
 
-        if (is_physical)
-            *is_physical = (pin < 0) ? false : true;
+        virtual void begin()
+        {
+            if (_pinStopMin >= 0)
+                pinMode(_pinStopMin, INPUT_PULLUP);
+            if (_pinStopMax >= 0)
+                pinMode(_pinStopMax, INPUT_PULLUP);
+            motor_enable(false);
+        }
 
-        /* If we have a pin, if we don't read a zero,
-         * then the switch is triggered, or the wire is pulled.
-         */
-        if (pin >= 0)
-            return digitalRead(pin) == 1;
+        bool endstop(enum axis_stop_e select, bool *is_physical = NULL)
+        {
+            int pin = -1;
+            bool tripped = false;
 
-        return false;
-    }
+            switch (select) {
+            case STOP_NONE:
+                break;
+            case STOP_MIN:
+                tripped = position_get() <= position_min();
+                /* FALLTHROUGH */
+            case STOP_MIN_SWITCH:
+                if (_pinStopMin >= 0)
+                    pin = _pinStopMin;
+                break;
+            case STOP_MAX:
+                tripped = position_get() >= position_max();
+                /* FALLTHROUGH */
+            case STOP_MAX_SWITCH:
+                if (_pinStopMax >= 0)
+                    pin = _pinStopMax;
+                break;
+            }
 
-    virtual void home(float mm = 0.0)
-    {
-        target_set(mm);
-    }
+            if (is_physical)
+                *is_physical = (pin < 0) ? false : true;
 
-    virtual bool update(unsigned long ms)
-    {
-        if (!_updated) {
-            _updated = true;
-            return true;
-        } else {
+            if (tripped)
+                return true;
+
+            /* If we have a pin, if we don't read a zero,
+             * then the switch is triggered, or the wire is pulled.
+             */
+            if (pin >= 0)
+                return digitalRead(pin) == 1;
+
             return false;
         }
-    }
 
-    virtual void motor_enable(bool enabled = true)
-    {
-        if (enabled)
-            _enabled = true;
-        else {
-           _enabled = false;
+        virtual void home(float mm = 0.0)
+        {
+            target_set(mm);
         }
-    }
 
-    virtual bool motor_enabled() { return _enabled; }
-    virtual bool motor_active() { return false; }
+        virtual bool update()
+        {
+            if (!_updated) {
+                _updated = true;
+                return true;
+            } else {
+                return false;
+            }
+        }
 
-    virtual void target_set(float mm, unsigned long ms = 0)
-    {
-        if (ms > 0)
-            _target.velocity = fabs(mm / ms);
-        else
-            _target.velocity = 0;
- 
-        _target.ms = millis() + ms;
-        _target.mm = mm;
-        _updated = false;
-    }
+        virtual void motor_enable(bool enabled = true)
+        {
+            if (enabled)
+                _enabled = true;
+            else {
+               _enabled = false;
+            }
+        }
 
-    void target_move(float mm, unsigned long ms = 0)
-    {
-        target_set(target_get() + mm, ms);
-    }
+        virtual bool motor_enabled() { return _enabled; }
+        virtual bool motor_active() { return false; }
 
-    virtual float target_get(unsigned long *ms_left = NULL)
-    {
-        unsigned long now = millis();
+        virtual void target_set(float mm, unsigned long ms = 0)
+        {
+            if (ms > 0)
+                _target.velocity = fabs(mm / ms);
+            else
+                _target.velocity = 0;
 
-        if (ms_left)
-            *ms_left = (now <= _target.ms) ? (_target.ms - now) : 0;
+            _target.ms = millis() + ms;
+            _target.mm = mm;
+            _updated = false;
+        }
 
-        return _target.mm;
-    }
+        void target_move(float mm, unsigned long ms = 0)
+        {
+            target_set(target_get() + mm, ms);
+        }
 
-    virtual float position_min(void) { return 0.0; }
-    virtual float position_max(void) { return 200.0; }
+        virtual float target_get(unsigned long *ms_left = NULL)
+        {
+            unsigned long now = millis();
 
-    virtual float position_get() { return _target.mm; }
+            if (ms_left)
+                *ms_left = (now <= _target.ms) ? (_target.ms - now) : 0;
 
-    virtual bool endstop_min() { return _target.mm <= position_min(); }
-    virtual bool endstop_max() { return _target.mm >= position_max(); }
+            return _target.mm;
+        }
+
+        virtual float position_min(void) { return 0.0; }
+        virtual float position_max(void) { return 200.0; }
+
+        virtual float position_get() { return _target.mm; }
 };
 
 #endif /* AXIS_H */

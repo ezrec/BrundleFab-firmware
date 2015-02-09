@@ -81,13 +81,13 @@ class Axis_DCEncoder : public Axis {
 
             if (stop_min >= 0) {
                 _mode = HOMING_STOP;
-                _homing.pin = Axis::STOP_MIN;
+                _homing.pin = Axis::STOP_MIN_SWITCH;
                 _homing.dir = BACKWARD;
                 _homing.home = _minPos - _overshoot;
                 _homing.pwm = _pwmMaximum;
             } else if (stop_max >= 0) {
                 _mode = HOMING_STOP;
-                _homing.pin = Axis::STOP_MAX;
+                _homing.pin = Axis::STOP_MAX_SWITCH;
                 _homing.dir = FORWARD;
                 _homing.home = _maxPos + _overshoot;
                 _homing.pwm = _pwmMaximum;

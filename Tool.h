@@ -50,7 +50,7 @@ class Tool {
             return _active;
         }
 
-        virtual bool update(unsigned long ms_now)
+        virtual bool update()
         {
             return _active;
         }

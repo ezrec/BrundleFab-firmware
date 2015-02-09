@@ -31,6 +31,11 @@ class Axis_Stepper : public Axis {
 
         float _mm_to_usteps;
         int32_t _position;
+        int32_t _target_position;
+        struct {
+            unsigned int msec;
+            unsigned int usec;
+        } _delay_per_step;
 
         enum {
             IDLE,
@@ -48,6 +53,12 @@ class Axis_Stepper : public Axis {
             unsigned long timeout;
         } _moving;
 
+        struct {
+            unsigned long last;
+            unsigned long this_step;
+            unsigned long per_step;
+        } _udelay;
+
     public:
         Axis_Stepper(int pinStopMin, int pinStopMax,
                      float maxPosMM, unsigned int microSteps,
@@ -63,10 +74,10 @@ class Axis_Stepper : public Axis {
             _position = 0;
             if (pinStopMin >= 0) {
                 _homing.steps = min(-0.5 * _mm_to_usteps, -1);
-                _homing.pin = Axis::STOP_MIN;
+                _homing.pin = Axis::STOP_MIN_SWITCH;
             } else if (pinStopMax >= 0) {
                 _homing.steps = max(0.5 * _mm_to_usteps, 1);
-                _homing.pin = Axis::STOP_MAX;
+                _homing.pin = Axis::STOP_MAX_SWITCH;
             } else {
                 _homing.steps = 0;
                 _homing.pin = Axis::STOP_NONE;
@@ -80,19 +91,7 @@ class Axis_Stepper : public Axis {
          * If 'steps' > 0, then move forward,
          * if 'steps' < 0, then move backward.
          */
-        virtual int32_t step(int32_t steps)
-        {
-            if (steps < 0)
-                return -1;
-            else if (steps > 0)
-                return 1;
-            else
-                return 0;
-        }
-
-        virtual void begin(void)
-        {
-        }
+        virtual int step(int32_t steps) = 0;
 
         virtual void home(float mm)
         {
@@ -120,10 +119,22 @@ class Axis_Stepper : public Axis {
             return _position / _mm_to_usteps;
         }
 
-        virtual bool update(unsigned long ms_now)
+        virtual void target_set(float mm, unsigned long ms = 0)
+        {
+            Axis::target_set(mm, ms);
+
+            _target_position = mm * _mm_to_usteps;
+            if (ms) {
+                _udelay.per_step = ms * 1000 / abs(_target_position - _position);
+            } else {
+                _udelay.per_step = 1000;
+            }
+        }
+
+        virtual bool update()
         {
             int32_t pos = _position;
-            int32_t tar = target_get() * _mm_to_usteps;
+            int32_t tar = _target_position;
 
             if (tar >= _maxPos)
                 tar = _maxPos - 1;
@@ -133,8 +144,11 @@ class Axis_Stepper : public Axis {
 
             switch (_mode) {
             case IDLE:
-                if (tar != pos)
+                if (tar != pos) {
+                    _udelay.last = micros();
+                    _udelay.this_step = 0;
                     _mode = MOVING;
+                }
                 break;
             case HOMING:
                 if (_homing.steps == 0) {
@@ -182,8 +196,14 @@ class Axis_Stepper : public Axis {
 
                 if (pos == tar)
                     _mode = IDLE;
-                else
-                    _position += step(tar - pos);
+                else {
+                    unsigned long usec_now = micros();
+                    if ((usec_now - _udelay.last) >= _udelay.this_step) {
+                        int steps = step(tar - pos);
+                        _position += steps;
+                        _udelay.this_step = steps  * _udelay.per_step;
+                    }
+                }
                 break;
             }
 

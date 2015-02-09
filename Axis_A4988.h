@@ -57,7 +57,7 @@ class Axis_A4988 : public Axis_Stepper {
             Axis_Stepper::motor_enable(enabled);
         }
 
-        virtual int step(int steps)
+        virtual int step(int32_t steps)
         {
             int dir;
 

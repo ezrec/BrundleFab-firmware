@@ -387,8 +387,11 @@ void GCode::_block_do(struct gcode_block *blk)
 
             break;
         case 1: /* G1 - Controlled move */
-            if (blk->update_mask & GCODE_UPDATE_F)
-                _feed_rate = blk->f * _units_to_mm;
+            if (blk->update_mask & GCODE_UPDATE_F) {
+                float rate = blk->f * _units_to_mm;
+                if (rate > 10.0)
+                    _feed_rate = rate;
+            }
 
             switch (_positioning) {
             case ABSOLUTE:
