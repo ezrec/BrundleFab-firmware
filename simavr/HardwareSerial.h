@@ -36,15 +36,17 @@ class HardwareSerial : public Stream
     int _io;
     int _c;
     struct termios _term;
+    const char *_device;
   public:
-    HardwareSerial()
+    HardwareSerial(const char *device = "/dev/tty")
     {
       _io = -1;
       _c = -1;
+      _device = device;
     }
     void begin(unsigned long baud_rate, uint8_t unit = 0)
     {
-      _io = ::open("/dev/tty", O_RDWR | O_NONBLOCK);
+      _io = ::open(_device, O_RDWR | O_NONBLOCK);
       if (_io >= 0) {
         struct termios nterm;
         ::tcgetattr(_io, &_term);
@@ -134,6 +136,9 @@ class HardwareSerial : public Stream
 #define SERIAL_8O2 0x3E
 
 extern HardwareSerial Serial;
+extern HardwareSerial Serial1;
+extern HardwareSerial Serial2;
+extern HardwareSerial Serial3;
 
 extern void serialEventRun(void) __attribute__((weak));
 

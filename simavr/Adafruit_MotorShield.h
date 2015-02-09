@@ -3,7 +3,9 @@
 
 #include <inttypes.h>
 
+#include "Arduino.h"
 #include "Encoder.h"
+#include "pinout.h"
 
 //#define MOTORDEBUG
 
@@ -114,13 +116,13 @@ public:
         return NULL;
       st = &steppers[n-1];
 
-      if (n == Z_MOTOR) {
+      if (n == 2) {
         st->_pinStopMin = -1;
-        st->_pinStopMax = ZSTP_MAX;
+        st->_pinStopMax = Z_STP_MAX;
         st->_limit = 11500 * MICROSTEPS;
       }
-      if (n == E_MOTOR) {
-        st->_pinStopMin = ESTP_MIN;
+      if (n == 1) {
+        st->_pinStopMin = E_STP_MIN;
         st->_pinStopMax = -1;
         st->_limit = 11500 * MICROSTEPS;
       }

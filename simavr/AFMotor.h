@@ -63,15 +63,16 @@ class AF_DCMotor
 {
  public:
   AF_DCMotor(uint8_t motornum, uint8_t freq = DC_MOTOR_PWM_RATE) {
-    if (motornum == X_MOTOR) {
-      _encoder = XENC_A;
-      encoder_pinstop(_encoder, 11500, XSTP_MIN, XSTP_MAX);
-    } else if (motornum == Y_MOTOR) {
-      _encoder = YENC_A;
-      encoder_pinstop(_encoder, 5250, YSTP_MIN, YSTP_MAX);
+#ifdef X_ENC_A
+    if (motornum == 0) {
+      _encoder = X_ENC_A;
+      encoder_pinstop(_encoder, 11500, X_STP_MIN, X_STP_MAX);
     } else {
       _encoder = 0;
     }
+#else
+    _encoder = 0;
+#endif
   }
   void run(uint8_t dir) { encoder_dir(_encoder, dir); }
   void setSpeed(uint8_t pwm)

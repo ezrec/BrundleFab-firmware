@@ -27,6 +27,8 @@
 #include "main.h"
 
 HardwareSerial Serial;
+HardwareSerial Serial2("/dev/ttyACM0");
+HardwareSerial Serial3("/dev/ttyUSB0");
 SDClass SD;
 unsigned long _micros;
 
