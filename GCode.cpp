@@ -569,6 +569,21 @@ void GCode::_block_do(struct gcode_block *blk)
             out->print(blk->string);
             _cnc->status_set(blk->string);
             break;
+        case 119: /* M119 - Report endstop status */
+            for (int i = 0; i < AXIS_MAX; i++) {
+                bool state, exists;
+                state = _cnc->axis(i)->endstop(Axis::STOP_MIN, &exists);
+                if (exists) {
+                    out->print(" ");out->print("xyze"[i]);
+                    out->print("_min:");out->print(state ? "TRIGGERED" : "open");
+                }
+                state = _cnc->axis(i)->endstop(Axis::STOP_MAX, &exists);
+                if (exists) {
+                    out->print(" ");out->print("xyze"[i]);
+                    out->print("_max:");out->print(state ? "TRIGGERED" : "open");
+                }
+            }
+            break;
         case 124: /* M124 - Immediate motor stop */
             _cnc->stop();
             break;
