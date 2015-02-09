@@ -25,8 +25,6 @@ class Axis_Stepper : public Axis {
         unsigned int _stepsPerRotation;
         float _mmPerRotation;
         unsigned int _microSteps;
-        int _pinStopMin;
-        int _pinStopMax;
 
         int32_t _maxPos;
         static const int32_t _minPos = 0;
@@ -43,7 +41,7 @@ class Axis_Stepper : public Axis {
         struct {
             unsigned long timeout;
             int32_t steps;
-            int pin;
+            enum axis_stop_e pin;
             float target;
         } _homing;
         struct {
@@ -54,26 +52,24 @@ class Axis_Stepper : public Axis {
         Axis_Stepper(int pinStopMin, int pinStopMax,
                      float maxPosMM, unsigned int microSteps,
                      unsigned int stepsPerRotation, float mmPerRotation)
-            : Axis()
+            : Axis(pinStopMin, pinStopMax)
         {
             _microSteps = microSteps;
             _stepsPerRotation = stepsPerRotation;
             _mmPerRotation = mmPerRotation;
             _mm_to_usteps = _stepsPerRotation * _microSteps / _mmPerRotation;
             _maxPos = maxPosMM * _mm_to_usteps;
-            _pinStopMin = pinStopMin;
-            _pinStopMax = pinStopMax;
 
             _position = 0;
-            if (_pinStopMin >= 0) {
+            if (pinStopMin >= 0) {
                 _homing.steps = min(-0.5 * _mm_to_usteps, -1);
-                _homing.pin = _pinStopMin;
-            } else if (_pinStopMax >= 0) {
+                _homing.pin = Axis::STOP_MIN;
+            } else if (pinStopMax >= 0) {
                 _homing.steps = max(0.5 * _mm_to_usteps, 1);
-                _homing.pin = _pinStopMax;
+                _homing.pin = Axis::STOP_MAX;
             } else {
                 _homing.steps = 0;
-                _homing.pin = -1;
+                _homing.pin = Axis::STOP_NONE;
             }
         }
 
@@ -96,10 +92,6 @@ class Axis_Stepper : public Axis {
 
         virtual void begin(void)
         {
-            if (_pinStopMin >= 0)
-                pinMode(_pinStopMin, INPUT_PULLUP);
-            if (_pinStopMax >= 0)
-                pinMode(_pinStopMax, INPUT_PULLUP);
         }
 
         virtual void home(float mm)
@@ -150,7 +142,7 @@ class Axis_Stepper : public Axis {
                     Axis::home(_homing.target);
                     break;
                 }
-                if (digitalRead(_homing.pin) == 1) {
+                if (endstop(_homing.pin)) {
                     _homing.timeout = millis()+1;
                     _mode = HOMING_QUIESCE;
                 } else {
@@ -166,8 +158,9 @@ class Axis_Stepper : public Axis {
                 break;
             case HOMING_BACKOFF:
                 if (millis() >= _homing.timeout) {
-                    if (digitalRead(_homing.pin) == 1) {
-                        step(-_homing.steps);
+                    if (endstop(_homing.pin)) {
+                        /* If we are still on the endstop, back slowly */
+                        step(_homing.steps > 0 ? -1 : 1);
                         _homing.timeout = millis()+10;
                     } else {
                         _position = (_homing.steps > 0) ? _maxPos : _minPos;
@@ -177,18 +170,14 @@ class Axis_Stepper : public Axis {
                 }
                 break;
             case MOVING:
-                if (tar >= pos && _pinStopMax >= 0) {
-                    if (digitalRead(_pinStopMax) == 1) {
-                        _mode = IDLE;
-                        break;
-                    }
+                if (tar >= pos && endstop(Axis::STOP_MAX)) {
+                    _mode = IDLE;
+                    break;
                 }
 
-                if (tar <= pos && _pinStopMin >= 0) {
-                    if (digitalRead(_pinStopMin) == 1) {
-                        _mode = IDLE;
-                        break;
-                    }
+                if (tar <= pos && endstop(Axis::STOP_MIN)) {
+                    _mode = IDLE;
+                    break;
                 }
 
                 if (pos == tar)

@@ -30,6 +30,8 @@
 class Axis {
   private:
     bool _enabled, _updated;
+    int _pinStopMin;
+    int _pinStopMax;
   protected:
     struct {
         float mm;
@@ -38,13 +40,53 @@ class Axis {
     } _target;
 
   public:
-    Axis()
+    enum axis_stop_e { STOP_NONE = 0, STOP_MIN = 1, STOP_MAX = 2 };
+
+    /* NOTE: This class assumes that all endstops are
+     *       normally closed switches to ground.
+     */
+    Axis(int pinStopMin = -1, int pinStopMax = -1)
     {
+        _pinStopMin = pinStopMin;
+        _pinStopMax = pinStopMax;
     }
 
     virtual void begin()
     {
+        if (_pinStopMin >= 0)
+            pinMode(_pinStopMin, INPUT_PULLUP);
+        if (_pinStopMax >= 0)
+            pinMode(_pinStopMax, INPUT_PULLUP);
         motor_enable(false);
+    }
+
+    bool endstop(enum axis_stop_e select, bool *is_physical = NULL)
+    {
+        int pin = -1;
+
+        switch (select) {
+        case STOP_NONE:
+            break;
+        case STOP_MIN:
+            if (_pinStopMin >= 0)
+                pin = _pinStopMin;
+            break;
+        case STOP_MAX:
+            if (_pinStopMax >= 0)
+                pin = _pinStopMax;
+            break;
+        }
+
+        if (is_physical)
+            *is_physical = (pin < 0) ? false : true;
+
+        /* If we have a pin, if we don't read a zero,
+         * then the switch is triggered, or the wire is pulled.
+         */
+        if (pin >= 0)
+            return digitalRead(pin) == 1;
+
+        return false;
     }
 
     virtual void home(float mm = 0.0)

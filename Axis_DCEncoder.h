@@ -32,8 +32,6 @@ class Axis_DCEncoder : public Axis {
         int _maxPos;
         int _pinEncoderA;
         int _pinEncoderB;
-        int _pinStopMin;
-        int _pinStopMax;
         uint8_t _pwmMinimum;
         uint8_t _pwmMaximum;
 
@@ -59,7 +57,8 @@ class Axis_DCEncoder : public Axis {
         struct {
             int32_t home, position, target;
             uint32_t timeout;
-            int pin, dir;
+            enum axis_stop_e pin;
+            int dir;
             uint8_t pwm;
         } _homing;
 
@@ -68,29 +67,43 @@ class Axis_DCEncoder : public Axis {
                        int enc_a, int enc_b,
                        int stop_min, int stop_max,
                        float mm, int32_t minpos, int32_t maxpos) :
-            Axis(),
+            Axis(stop_min, stop_max),
             _motor(afmotor),
             _encoder(enc_a, enc_b)
         {
             _minPos = minpos;
             _maxPos = maxpos;
-            _pinStopMin = stop_min;
-            _pinStopMax = stop_max;
             _pinEncoderA = enc_a;
             _pinEncoderB = enc_b;
             _pwmMinimum = pwm_min;
             _pwmMaximum = pwm_max;
             _mm_to_position = (float)(_maxPos - _minPos)/mm;
+
+            if (stop_min >= 0) {
+                _mode = HOMING_STOP;
+                _homing.pin = Axis::STOP_MIN;
+                _homing.dir = BACKWARD;
+                _homing.home = _minPos - _overshoot;
+                _homing.pwm = _pwmMaximum;
+            } else if (stop_max >= 0) {
+                _mode = HOMING_STOP;
+                _homing.pin = Axis::STOP_MAX;
+                _homing.dir = FORWARD;
+                _homing.home = _maxPos + _overshoot;
+                _homing.pwm = _pwmMaximum;
+            } else {
+                _mode = HOMING_STALL;
+                _homing.pin = Axis::STOP_NONE;
+                _homing.dir = BACKWARD;
+                _homing.home = _minPos;
+                _homing.pwm = (_pwmMinimum + _pwmMaximum) / 2;
+            }
         }
 
         virtual void begin()
         {
             pinMode(_pinEncoderA, INPUT);
             pinMode(_pinEncoderB, INPUT);
-            if (_pinStopMin >= 0)
-                pinMode(_pinStopMin, INPUT_PULLUP);
-            if (_pinStopMax >= 0)
-                pinMode(_pinStopMax, INPUT_PULLUP);
 
             _encoder.write(0);
             Axis::begin();
@@ -100,24 +113,10 @@ class Axis_DCEncoder : public Axis {
         {
             _homing.target = pos;
 
-            if (_pinStopMin >= 0) {
-                _mode = HOMING_STOP;
-                _homing.pin = _pinStopMin;
-                _homing.dir = BACKWARD;
-                _homing.home = _minPos - _overshoot;
-                _homing.pwm = _pwmMaximum;
-            } else if (_pinStopMax >= 0) {
-                _mode = HOMING_STOP;
-                _homing.pin = _pinStopMax;
-                _homing.dir = FORWARD;
-                _homing.home = _maxPos + _overshoot;
-                _homing.pwm = _pwmMaximum;
-            } else {
+            if (_homing.pin == Axis::STOP_NONE)
                 _mode = HOMING_STALL;
-                _homing.dir = BACKWARD;
-                _homing.home = _minPos;
-                _homing.pwm = (_pwmMinimum + _pwmMaximum) / 2;
-            }
+            else
+                _mode = HOMING_STOP;
 
             _motor.setSpeed(_homing.pwm);
             _motor.run(_homing.dir);
@@ -192,7 +191,7 @@ class Axis_DCEncoder : public Axis {
                 }
                 break;
             case HOMING_STOP:
-                if (digitalRead(_homing.pin) == 1) {
+                if (endstop(_homing.pin)) {
                     _homing.timeout = ms_now+1;
                     _mode = HOMING_STOP_QUIESCE;
                 }
@@ -210,7 +209,7 @@ class Axis_DCEncoder : public Axis {
                 break;
             case HOMING_STOP_BACKOFF:
                 if (ms_now >= _homing.timeout) {
-                    if (digitalRead(_homing.pin) == 1) {
+                    if (endstop(_homing.pin)) {
                         if (_homing.pwm < _pwmMaximum)
                             _homing.pwm++;
                         _motor.setSpeed(_homing.pwm);
@@ -225,22 +224,18 @@ class Axis_DCEncoder : public Axis {
                 break;
             case MOVING:
             case MOVING_OVERSHOOT:
-                if (_pinStopMin >= 0 && digitalRead(_pinStopMin) == 1) {
-                    if (tar <= pos) {
-                        _encoder.write(_minPos);
-                        _motor.setSpeed(0);
-                        _mode = IDLE;
-                        break;
-                    }
+                if (tar >= pos && endstop(Axis::STOP_MAX)) {
+                    _encoder.write(_minPos);
+                    _motor.setSpeed(0);
+                    _mode = IDLE;
+                    break;
                 }
 
-                if (_pinStopMax >= 0 && digitalRead(_pinStopMax) == 1) {
-                    if (tar >= pos) {
-                        _encoder.write(_maxPos);
-                        _motor.setSpeed(0);
-                        _mode = IDLE;
-                        break;
-                    }
+                if (tar <= pos && endstop(Axis::STOP_MIN)) {
+                    _encoder.write(_maxPos);
+                    _motor.setSpeed(0);
+                    _mode = IDLE;
+                    break;
                 }
 
                 int32_t distance = (pos > tar) ? (pos - tar) : (tar - pos);
