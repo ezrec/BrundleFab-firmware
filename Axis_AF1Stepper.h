@@ -21,196 +21,68 @@
 #include <Wire.h>
 #include <AFMotor.h>
 
-#include "Axis.h"
+#include "Axis_Stepper.h"
 
-class Axis_AF1Stepper : public Axis {
+class Axis_AF1Stepper : public Axis_Stepper {
     private:
-        int _stepsPerRotation;
-        float _mmPerRotation;
-        int _pinStopMin;
-        int _pinStopMax;
-
-        int32_t _maxPos;
-        static const int32_t _minPos = 0;
-
-        float _mm_to_position;
-        int32_t _position;
-
         AF_Stepper _adaMotor; /* 1 = M1/M2, 2 = M3/M4 */
         AF_Stepper *_motor;
 
-        enum {
-            IDLE,
-            HOMING, HOMING_QUIESCE,
-            HOMING_BACKOFF,
-            MOVING
-        } _mode;
-        struct {
-            unsigned long timeout;
-            int32_t steps;
-            int dir;
-            int pin;
-            int32_t target;
-        } _homing;
-        struct {
-            unsigned long timeout;
-        } _moving;
-
     public:
         Axis_AF1Stepper(int af_motor, int pinStopMin, int pinStopMax,
-                        unsigned int maxPos,
+                        float maxPosMM,
                         unsigned int stepsPerRotation, float mmPerRotation)
-            : Axis(), _adaMotor(stepsPerRotation, af_motor)
+            : Axis_Stepper(pinStopMin, pinStopMax,
+                           maxPosMM,
+                           MICROSTEPS, stepsPerRotation, mmPerRotation),
+             _adaMotor(stepsPerRotation, af_motor)
         {
             _motor = &_adaMotor;
-            _stepsPerRotation = stepsPerRotation;
-            _mmPerRotation = mmPerRotation;
-            _mm_to_position = _stepsPerRotation / _mmPerRotation;
-            _maxPos = maxPos;
-            _pinStopMin = pinStopMin;
-            _pinStopMax = pinStopMax;
-
-            _position = 0;
-            if (_pinStopMin >= 0) {
-                _homing.dir = BACKWARD;
-                _homing.pin = _pinStopMin;
-            } else if (_pinStopMax >= 0) {
-                _homing.dir = FORWARD;
-                _homing.pin = _pinStopMax;
-            } else {
-                _homing.dir = BRAKE;
-                _homing.pin = -1;
-            }
         }
 
         virtual void begin()
         {
             _motor->setSpeed(100);       /* 100 RPM */
-            if (_pinStopMin >= 0)
-                pinMode(_pinStopMin, INPUT_PULLUP);
-            if (_pinStopMax >= 0)
-                pinMode(_pinStopMax, INPUT_PULLUP);
-            Axis::begin();
-        }
-
-        virtual void home(int32_t position)
-        {
-            _homing.steps = 1;
-            _homing.target = position;
-            _mode = HOMING;
-        }
-
-        virtual const float mm_to_position()
-        {
-            return _mm_to_position;
-        }
-
-        virtual const int32_t position_min()
-        {
-            return _minPos;
-        }
-
-        virtual const int32_t position_max()
-        {
-            return _maxPos;
+            Axis_Stepper::begin();
         }
 
         virtual void motor_enable(bool enabled = true)
         {
             if (!enabled)
                 _motor->release();
-            Axis::motor_enable(enabled);
+            Axis_Stepper::motor_enable(enabled);
         }
 
-        virtual bool motor_active()
+        virtual int step(int steps)
         {
-            return _mode != IDLE;
-        }
+            uint8_t dir;
+            int neg = 1;
 
-        virtual int32_t position_get(void)
-        {
-            return _position;
-        }
+            if (!steps)
+                return 0;
 
-        virtual bool update()
-        {
-            int32_t pos = position_get();
-            int32_t tar = target_get();
-
-            if (tar >= position_max())
-                tar = position_max() - 1;
-
-            if (tar < position_min())
-                tar = position_min();
-
-            switch (_mode) {
-            case IDLE:
-                if (tar != pos)
-                    _mode = MOVING;
-                break;
-            case HOMING:
-                if (_homing.dir == BRAKE) {
-                    _mode = IDLE;
-                    Axis::home(_homing.target);
-                    break;
-                }
-                if (digitalRead(_homing.pin) == 1) {
-                    _homing.timeout = millis()+1;
-                    _mode = HOMING_QUIESCE;
-                } else {
-                    _motor->step(_homing.steps, _homing.dir, DOUBLE);
-                }
-                break;
-            case HOMING_QUIESCE:
-                if (millis() >= _homing.timeout) {
-                    _mode = HOMING_BACKOFF;
-                    _homing.timeout = millis()+10;
-                    _mode = HOMING_BACKOFF;
-                }
-                break;
-            case HOMING_BACKOFF:
-                if (millis() >= _homing.timeout) {
-                    if (digitalRead(_homing.pin) == 1) {
-                        _motor->step(_homing.steps, (_homing.dir == FORWARD) ? BACKWARD : FORWARD, SINGLE);
-                        _homing.timeout = millis()+10;
-                    } else {
-                        motor_halt();
-                        _position = (_homing.dir == FORWARD) ? _maxPos : _minPos;
-                        _mode = IDLE;
-                        Axis::home(_homing.target);
-                    }
-                }
-                break;
-            case MOVING:
-                if (tar >= pos && _pinStopMax >= 0) {
-                    if (digitalRead(_pinStopMax) == 1) {
-                        _mode = IDLE;
-                        motor_halt();
-                        break;
-                    }
-                }
-
-                if (tar <= pos && _pinStopMin >= 0) {
-                    if (digitalRead(_pinStopMin) == 1) {
-                        _mode = IDLE;
-                        motor_halt();
-                        break;
-                    }
-                }
-
-                if (pos == tar) {
-                    _mode = IDLE;
-                } else if (pos < tar) {
-                    _motor->step(1, FORWARD, SINGLE);
-                    _position++;
-                } else {
-                    _motor->step(1, BACKWARD, SINGLE);
-                    _position--;
-                }
-                break;
+            if (steps < 0) {
+                dir = BACKWARD;
+                steps = -steps;
+                neg = -1;
+            } else {
+                dir = FORWARD;
             }
 
-            return (_mode == IDLE) ? false : true;
+            if (steps > MICROSTEPS * 2) {
+                int dstep = steps / (MICROSTEPS * 2);
+                _motor->step(dstep, dir, DOUBLE);
+                return neg * dstep * (MICROSTEPS * 2);
+            }
+
+            if (steps > MICROSTEPS) {
+                int sstep = steps / MICROSTEPS;
+                _motor->step(sstep, dir, SINGLE);
+                return neg * sstep * (MICROSTEPS * 2);
+            }
+
+            _motor->step(steps, dir, MICROSTEP);
+            return neg * steps;
         }
 };
 

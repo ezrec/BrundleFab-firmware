@@ -54,7 +54,7 @@ static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
     for (int i = 0; i < AXIS_MAX; i++) {
         Axis *axis = ui->cnc()->axis(i);
         bool selected = sel_axis == i;
-        pos[i] = axis->position_get_mm();
+        pos[i] = axis->position_get();
         ui->setTextCursor(col + 1 + (1 + 1 + 1 + 3 + 1 + 2 + 1) * (i >> 1), row + 1 + (i & 1));
         ui->setTextColor(selected ? st : fg, bg);
         ui->print("XYZE"[i]); ui->print(":");
@@ -124,7 +124,7 @@ class MenuAxis : public Menu {
                 if (menu_axis_incr[_incr] == 0)
                     ui->cnc()->axis(_axis)->home();
                 else
-                    ui->cnc()->axis(_axis)->target_move_mm(menu_axis_incr[_incr]);
+                    ui->cnc()->axis(_axis)->target_move(menu_axis_incr[_incr]);
             }
 
             ui->setTextWrap(false);

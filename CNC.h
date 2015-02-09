@@ -79,23 +79,23 @@ class CNC {
         }
 
 
-        void target_move_mm(float *pos, uint8_t axis_mask, unsigned long ms = 0)
+        void target_move(float *pos, uint8_t axis_mask, unsigned long ms = 0)
         {
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i))
-                    _axis[i]->target_move_mm(pos[i], ms);
+                    _axis[i]->target_move(pos[i], ms);
             }
         }
 
-        void target_set_mm(float *pos, uint8_t axis_mask, unsigned long ms = 0)
+        void target_set(float *pos, uint8_t axis_mask, unsigned long ms = 0)
         {
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i))
-                    _axis[i]->target_set_mm(pos[i], ms);
+                    _axis[i]->target_set(pos[i], ms);
             }
         }
 
-        void target_move_mm_rate(float *pos, uint8_t axis_mask, float feed_rate)
+        void target_move_rate(float *pos, uint8_t axis_mask, float feed_rate)
         {
             float dist = 0.0;
 
@@ -106,29 +106,29 @@ class CNC {
 
             unsigned long ms = sqrt(dist) / feed_rate * 60000.0;
 
-            target_move_mm(pos, axis_mask, ms);
+            target_move(pos, axis_mask, ms);
         }
 
-        void target_set_mm_rate(float *pos, uint8_t axis_mask, float feed_rate)
+        void target_set_rate(float *pos, uint8_t axis_mask, float feed_rate)
         {
             float dist = 0.0;
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i)) {
-                    float delta = pos[i] - _axis[i]->target_get_mm();
+                    float delta = pos[i] - _axis[i]->target_get();
                     dist += delta * delta;
                 }
             }
 
             unsigned long ms = sqrt(dist) / feed_rate * 60000.0;
 
-            target_set_mm(pos, axis_mask, ms);
+            target_set(pos, axis_mask, ms);
         }
 
-        void target_get_mm(float *pos)
+        void target_get(float *pos)
         {
             for (int i = 0; i < AXIS_MAX; i++)
-                pos[i] = _axis[i]->target_get_mm();
+                pos[i] = _axis[i]->target_get();
         }
 
 
@@ -195,20 +195,9 @@ class CNC {
                 _axis[i]->motor_enable(enabled);
         }
 
-        void motor_halt()
-        {
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_halt();
-        }
-
         void motor_disable()
         {
             motor_enable(false);
-        }
-
-        void sleep()
-        {
-            motor_halt();
         }
 
         void stop()
@@ -284,15 +273,15 @@ class CNC {
                 _switch_mask &= ~mask;
         }
 
-        bool update()
+        bool update(unsigned long ms_now)
         {
             bool motion = false;
 
             for (int i = 0; i < AXIS_MAX; i++)
-                motion |= _axis[i]->update();
+                motion |= _axis[i]->update(ms_now);
 
             if (motion)
-                _toolhead->update();
+                _toolhead->update(ms_now);
 
             return motion;
         }

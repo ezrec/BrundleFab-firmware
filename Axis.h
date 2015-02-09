@@ -29,26 +29,30 @@
 
 class Axis {
   private:
-    int32_t _target, _velocity;
-    bool _enabled, _valid, _updated;
+    bool _enabled, _updated;
+  protected:
+    struct {
+        float mm;
+        unsigned long ms;
+        float velocity;
+    } _target;
 
   public:
-    Axis() {}
-
-    virtual const float mm_to_position() { return 100.0; }
+    Axis()
+    {
+    }
 
     virtual void begin()
     {
         motor_enable(false);
     }
 
-    virtual void home(int32_t pos = 0)
+    virtual void home(float mm = 0.0)
     {
-      _valid = true;
-      target_set(pos);
+        target_set(mm);
     }
 
-    virtual bool update()
+    virtual bool update(unsigned long ms)
     {
         if (!_updated) {
             _updated = true;
@@ -63,61 +67,47 @@ class Axis {
         if (enabled)
             _enabled = true;
         else {
-           motor_halt();
            _enabled = false;
-           _valid = false;
         }
     }
 
     virtual bool motor_enabled() { return _enabled; }
-
     virtual bool motor_active() { return false; }
-    virtual void motor_halt() { }
 
-    /* Velocity is in position units / minute */
-    virtual void velocity_set(int32_t vel) { _velocity = vel; }
-    virtual int32_t velocity_get() { return _velocity; }
-
-    virtual void target_set(int32_t pos, float time_min = 0.0)
+    virtual void target_set(float mm, unsigned long ms = 0)
     {
-        if (time_min > 0.0)
-            velocity_set(fabsf((pos - _target) / time_min));
-
-        _target = pos;
+        if (ms > 0)
+            _target.velocity = fabs(mm / ms);
+        else
+            _target.velocity = 0;
+ 
+        _target.ms = millis() + ms;
+        _target.mm = mm;
         _updated = false;
     }
-    virtual int32_t target_get(void) { return _target; }
 
-    virtual const int32_t position_min(void) { return 0; }
-    virtual const int32_t position_max(void) { return 2000; }
+    void target_move(float mm, unsigned long ms = 0)
+    {
+        target_set(target_get() + mm, ms);
+    }
 
-    virtual bool position_valid() { return _valid; } 
-    virtual int32_t position_get() { return _target; }
+    virtual float target_get(unsigned long *ms_left = NULL)
+    {
+        unsigned long now = millis();
 
-    virtual inline void home_mm(float pos_mm)
-    {
-        return home(pos_mm * mm_to_position());
+        if (ms_left)
+            *ms_left = (now <= _target.ms) ? (_target.ms - now) : 0;
+
+        return _target.mm;
     }
-    virtual inline float target_get_mm()
-    {
-        return target_get() / mm_to_position();
-    }
-    virtual inline void target_set_mm(float pos_mm, float time_min = 0.0)
-    {
-        target_set(pos_mm * mm_to_position(), time_min);
-    }
-    virtual inline void target_move(int32_t pos, float time_min = 0.0)
-    {
-        target_set(target_get() + pos, time_min);
-    }
-    virtual inline void target_move_mm(float pos_mm, float time_min = 0.0)
-    {
-        target_move(pos_mm * mm_to_position(), time_min);
-    }
-    virtual inline float position_get_mm()
-    {
-        return position_get() / mm_to_position();
-    }
+
+    virtual float position_min(void) { return 0.0; }
+    virtual float position_max(void) { return 200.0; }
+
+    virtual float position_get() { return _target.mm; }
+
+    virtual bool endstop_min() { return _target.mm <= position_min(); }
+    virtual bool endstop_max() { return _target.mm >= position_max(); }
 };
 
 #endif /* AXIS_H */

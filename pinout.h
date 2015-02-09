@@ -18,6 +18,8 @@
 #ifndef PINOUT_H
 #define PINOUT_H
 
+#include "config.h"
+
 #if defined(SHIELD_ramps)
 #include "pinout-ramps.h"
 #elif defined(SHIELD_brundle)

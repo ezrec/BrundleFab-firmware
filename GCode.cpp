@@ -378,10 +378,10 @@ void GCode::_block_do(struct gcode_block *blk)
         case 0: /* G0 - Uncontrolled move */
             switch (_positioning) {
             case ABSOLUTE:
-                _cnc->target_set_mm(blk->axis, blk->update_mask);
+                _cnc->target_set(blk->axis, blk->update_mask);
                 break;
             case RELATIVE:
-                _cnc->target_move_mm(blk->axis, blk->update_mask);
+                _cnc->target_move(blk->axis, blk->update_mask);
                 break;
             }
 
@@ -392,10 +392,10 @@ void GCode::_block_do(struct gcode_block *blk)
 
             switch (_positioning) {
             case ABSOLUTE:
-                _cnc->target_set_mm_rate(blk->axis, blk->update_mask, _feed_rate);
+                _cnc->target_set_rate(blk->axis, blk->update_mask, _feed_rate);
                 break;
             case RELATIVE:
-                _cnc->target_move_mm_rate(blk->axis, blk->update_mask, _feed_rate);
+                _cnc->target_move_rate(blk->axis, blk->update_mask, _feed_rate);
                 break;
             }
 
@@ -403,7 +403,7 @@ void GCode::_block_do(struct gcode_block *blk)
             if (_vis) {
                 float pos[AXIS_MAX];
 
-                _cnc->target_get_mm(pos);
+                _cnc->target_get(pos);
 
                 int color;
                 int tool = _cnc->toolhead()->selected();
@@ -434,14 +434,14 @@ void GCode::_block_do(struct gcode_block *blk)
                     if (blk->update_mask & GCODE_UPDATE_AXIS(i))
                         pos[i] = blk->axis[i];
                     else
-                        pos[i] = _cnc->axis(i)->target_get_mm();
+                        pos[i] = _cnc->axis(i)->target_get();
                 }
                 _vis->cursor_to(pos);
             }
 #endif
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (blk->update_mask & GCODE_UPDATE_AXIS(i))
-                    _cnc->axis(i)->home_mm(blk->axis[i]);
+                    _cnc->axis(i)->home(blk->axis[i]);
             }
             break;
         case 90: /* G90 - Set to absolute positioning */
@@ -453,7 +453,7 @@ void GCode::_block_do(struct gcode_block *blk)
         case 92: /* G92 - Set position */
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (blk->update_mask & GCODE_UPDATE_AXIS(i))
-                    _offset[i] = (_cnc->axis(i)->position_get_mm() + blk->axis[i]);
+                    _offset[i] = (_cnc->axis(i)->position_get() + blk->axis[i]);
             }
         default:
             break;
@@ -549,16 +549,16 @@ void GCode::_block_do(struct gcode_block *blk)
             break;
         case 114: /* M114 - Get current position */
             out->print(" C: X:");
-            out->print((float)_cnc->axis(AXIS_X)->position_get_mm()/
+            out->print((float)_cnc->axis(AXIS_X)->position_get()/
                                   _units_to_mm);
             out->print(" Y:");
-            out->print((float)_cnc->axis(AXIS_Y)->position_get_mm()/
+            out->print((float)_cnc->axis(AXIS_Y)->position_get()/
                                   _units_to_mm);
             out->print(" Z:");
-            out->print((float)_cnc->axis(AXIS_Z)->position_get_mm()/
+            out->print((float)_cnc->axis(AXIS_Z)->position_get()/
                                   _units_to_mm);
             out->print(" E:");
-            out->print((float)_cnc->axis(AXIS_E)->position_get_mm()/
+            out->print((float)_cnc->axis(AXIS_E)->position_get()/
                                   _units_to_mm);
             break;
         case 115: /* M115 - Get firmware version */

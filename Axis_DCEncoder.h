@@ -123,19 +123,14 @@ class Axis_DCEncoder : public Axis {
             _motor.run(_homing.dir);
         }
 
-        virtual const int32_t position_min()
+        virtual float position_min()
         {
-            return _minPos;
+            return _minPos / _mm_to_position;
         }
 
-        virtual const int32_t position_max()
+        virtual float position_max()
         {
-            return _maxPos;
-        }
-
-        virtual const float mm_to_position()
-        {
-            return _mm_to_position;
+            return _maxPos / _mm_to_position;
         }
 
         virtual void motor_enable(bool enabled = true)
@@ -145,32 +140,26 @@ class Axis_DCEncoder : public Axis {
             Axis::motor_enable(enabled);
         }
 
-        virtual void motor_halt()
-        {
-            _motor.setSpeed(0);
-            Axis::motor_halt();
-        }
-
         virtual bool motor_active()
         {
             return _mode != IDLE;
         }
 
-        virtual int32_t position_get(void)
+        virtual float position_get(void)
         {
-            return _encoder.read();
+            return _encoder.read() / _mm_to_position;
         }
 
-        virtual bool update()
+        virtual bool update(unsigned long ms_now)
         {
-            int32_t pos = position_get();
-            int32_t tar = target_get();
+            int32_t pos = _encoder.read();
+            int32_t tar = target_get() * _mm_to_position;
 
-            if (tar >= position_max())
-                tar = position_max() - 1;
+            if (tar >= _maxPos)
+                tar = _maxPos - 1;
 
-            if (tar < position_min())
-                tar = position_min();
+            if (tar < _minPos)
+                tar = _minPos;
 
             switch (_mode) {
             case IDLE:
@@ -178,16 +167,16 @@ class Axis_DCEncoder : public Axis {
                     _mode = MOVING;
                 break;
             case HOMING_STALL:
-                _homing.timeout = millis()+10;
+                _homing.timeout = ms_now+10;
                 _homing.position = pos;
                 _mode = HOMING_STALL_QUIESCE;
                 break;
             case HOMING_STALL_QUIESCE:
-                if (millis() >= _homing.timeout) {
+                if (ms_now >= _homing.timeout) {
                     if (_encoder.read() == _homing.position) {
                         _motor.setSpeed(0);
                         _motor.run(RELEASE);
-                        _homing.timeout = millis() + 100;
+                        _homing.timeout = ms_now + 100;
                         _mode = HOMING_STALL_BACKOFF;
                        break;
                     }
@@ -195,7 +184,7 @@ class Axis_DCEncoder : public Axis {
                 }
                 break;
             case HOMING_STALL_BACKOFF:
-                if (millis() >= _homing.timeout) {
+                if (ms_now >= _homing.timeout) {
                     _motor.setSpeed(_homing.pwm);
                     _encoder.write(_homing.home);
                     Axis::home(_homing.target);
@@ -204,31 +193,31 @@ class Axis_DCEncoder : public Axis {
                 break;
             case HOMING_STOP:
                 if (digitalRead(_homing.pin) == 1) {
-                    _homing.timeout = millis()+1;
+                    _homing.timeout = ms_now+1;
                     _mode = HOMING_STOP_QUIESCE;
                 }
                 break;
             case HOMING_STOP_QUIESCE:
-                if (millis() >= _homing.timeout) {
+                if (ms_now >= _homing.timeout) {
                     _mode = HOMING_STOP_BACKOFF;
                     _motor.run(RELEASE);
                     _motor.setSpeed(_pwmMinimum);
                     _motor.run(_homing.dir == FORWARD ? BACKWARD : FORWARD);
-                    _homing.timeout = millis()+10;
+                    _homing.timeout = ms_now+10;
                     _homing.pwm = _pwmMinimum;
                     _mode = HOMING_STOP_BACKOFF;
                 }
                 break;
             case HOMING_STOP_BACKOFF:
-                if (millis() >= _homing.timeout) {
+                if (ms_now >= _homing.timeout) {
                     if (digitalRead(_homing.pin) == 1) {
                         if (_homing.pwm < _pwmMaximum)
                             _homing.pwm++;
                         _motor.setSpeed(_homing.pwm);
-                        _homing.timeout = millis()+10;
+                        _homing.timeout = ms_now+10;
                     } else {
-                        motor_halt();
                         _encoder.write(_homing.home);
+                        _motor.setSpeed(0);
                         _mode = IDLE;
                         Axis::home(_homing.target);
                     }
@@ -238,18 +227,18 @@ class Axis_DCEncoder : public Axis {
             case MOVING_OVERSHOOT:
                 if (_pinStopMin >= 0 && digitalRead(_pinStopMin) == 1) {
                     if (tar <= pos) {
-                        _mode = IDLE;
                         _encoder.write(_minPos);
-                        motor_halt();
+                        _motor.setSpeed(0);
+                        _mode = IDLE;
                         break;
                     }
                 }
 
                 if (_pinStopMax >= 0 && digitalRead(_pinStopMax) == 1) {
                     if (tar >= pos) {
-                        _mode = IDLE;
                         _encoder.write(_maxPos);
-                        motor_halt();
+                        _motor.setSpeed(0);
+                        _mode = IDLE;
                         break;
                     }
                 }
@@ -260,15 +249,15 @@ class Axis_DCEncoder : public Axis {
                     _motor.run(BRAKE);
                     _motor.setSpeed(0);
                     if (_mode == MOVING) {
-                        _moving.timeout = millis() + 1;
+                        _moving.timeout = ms_now + 1;
                         _moving.overshoot = _overshoot;
                         _mode = MOVING_OVERSHOOT;
                     } else {
-                        if (millis() < _moving.timeout)
+                        if (ms_now < _moving.timeout)
                             break;
                         if (_moving.overshoot) {
                             _moving.overshoot--;
-                            _moving.timeout = millis() + 1;
+                            _moving.timeout = ms_now + 1;
                         } else {
                             _mode = IDLE;
                         }
@@ -286,7 +275,7 @@ class Axis_DCEncoder : public Axis {
                 _motor.setSpeed(speed);
                 _motor.run((pos < tar) ? FORWARD : BACKWARD);
                 break;
-                if (millis() > _moving.timeout) {
+                if (ms_now > _moving.timeout) {
                     if (_moving.overshoot) {
                         _moving.overshoot--;
                         _motor.run(BRAKE);

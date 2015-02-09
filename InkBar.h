@@ -66,7 +66,6 @@ class InkBar : public Tool, public Axis {
             _dotlines_per_mm = dotlines_per_mm;
         }
 
-        virtual const float mm_to_position() { return _dotlines_per_mm; }
 
         void begin()
         {
@@ -116,7 +115,7 @@ if (DEBUG) {
             }
         }
 
-        virtual bool update(void)
+        virtual bool update(unsigned long now_ms)
         {
             if (_recv()) {
 if (DEBUG) if (_status.state != 4) { Serial.print("status: 0x");Serial.println(_status.state, HEX); }
@@ -152,8 +151,10 @@ if (DEBUG) Serial.println("target_set: Homing");
             Axis::home(pos);
         }
 
-        virtual void target_set(int32_t pos, float time_min)
+        virtual void target_set(float mm, float time_min)
         {
+            int32_t pos = mm * _dotlines_per_mm;
+
             /* Moving backwards? Ink the bar... */
             if (pos < _dotline) {
 if (DEBUG) Serial.println("target_set: Inking");
@@ -169,7 +170,7 @@ if (DEBUG) Serial.println(pos - _dotline);
                 _dotline = pos;
             }
 
-            Axis::target_set(pos, time_min);
+            Axis::target_set(mm, time_min);
         }
 
     private:

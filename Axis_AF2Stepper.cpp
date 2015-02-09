@@ -18,11 +18,7 @@ void Axis_AF2Stepper::begin(void)
     }
 
     _motor->setSpeed(100);       /* 100 RPM */
-    if (_pinStopMin >= 0)
-        pinMode(_pinStopMin, INPUT_PULLUP);
-    if (_pinStopMax >= 0)
-        pinMode(_pinStopMax, INPUT_PULLUP);
-    Axis::begin();
+    Axis_Stepper::begin();
 }
 
 /* vim: set shiftwidth=4 expandtab:  */
