@@ -26,10 +26,10 @@ class Axis_A4988 : public Axis_Stepper {
 
     public:
         Axis_A4988(int enable, int step, int dir,
-                   int pinStopMin, int pinStopMax,
+                   int pinStopMin, int pinStopMax, unsigned int mm_per_min_max,
                    float maxPosMM, int microsteps,
                    unsigned int stepsPerRotation, float mmPerRotation)
-            : Axis_Stepper(pinStopMin, pinStopMax,
+            : Axis_Stepper(pinStopMin, pinStopMax, mm_per_min_max,
                            maxPosMM, microsteps,
                            stepsPerRotation, mmPerRotation)
         {

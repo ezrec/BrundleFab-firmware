@@ -35,8 +35,8 @@
 #define X_STP_MAX               33      /* Endstop (maximum) */
 #define X_TURN_STEPS            200     /* Steps/full rotation */
 #define X_TURN_MM               76.0    /* mm/full rotation */
-#define X_MOTOR(name)           Axis_AF1Stepper name(2,  X_STP_MIN, X_STP_MAX, \
-                                               X_MM_MAX, \
+#define X_MOTOR(name)           Axis_AF1Stepper name(2, X_STP_MIN, X_STP_MAX, \
+                                               X_FEED_MAX, X_MM_MAX, \
                                                X_TURN_STEPS, X_TURN_MM)
 
 /* Y is driven by the inkbar  - 9", 96 DPI */
@@ -45,17 +45,17 @@
 #define Z_STP_MIN               -1      /* Endstop (Minimim) */
 #define Z_STP_MAX               39      /* Endstop (Maximim) */
 #define Z_TURN_STEPS            200     /* Steps/full rotation */
-#define Z_TURN_MM               4.0     /* mm/full rotataton */
+#define Z_TURN_MM               2.0     /* mm/full rotataton */
 #define Z_MOTOR(name)           Axis_AF2Stepper name(2, Z_STP_MIN, Z_STP_MAX, \
-                                                Z_MM_MAX, \
+                                                Z_FEED_MAX, Z_MM_MAX, \
                                                 Z_TURN_STEPS, Z_TURN_MM)
 
 #define E_STP_MIN                37      /* Endstop (Minimum) */
 #define E_STP_MAX                -1      /* Endstop (Maximim) */
 #define E_TURN_STEPS            200     /* Steps/full rotation */
-#define E_TURN_MM               4.0     /* mm/full rotataton */
+#define E_TURN_MM               2.0     /* mm/full rotataton */
 #define E_MOTOR(name)           Axis_AF2Stepper name(1, E_STP_MIN, E_STP_MAX, \
-                                                E_MM_MAX, \
+                                                E_FEED_MAX, E_MM_MAX, \
                                                 E_TURN_STEPS, E_TURN_MM)
 
 #define FUSER_ENABLE            43      /* Heater enable */

@@ -65,9 +65,9 @@ class Axis_DCEncoder : public Axis {
     public:
         Axis_DCEncoder(int afmotor, uint8_t pwm_min, uint8_t pwm_max,
                        int enc_a, int enc_b,
-                       int stop_min, int stop_max,
+                       int stop_min, int stop_max, unsigned int mm_per_min_max,
                        float mm, int32_t minpos, int32_t maxpos) :
-            Axis(stop_min, stop_max),
+            Axis(stop_min, stop_max, mm_per_min_max),
             _motor(afmotor),
             _encoder(enc_a, enc_b)
         {

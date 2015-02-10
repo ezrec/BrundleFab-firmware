@@ -30,12 +30,14 @@ class Axis_AF2Stepper : public Axis_Stepper {
         Adafruit_StepperMotor *_motor;
 
     public:
-        Axis_AF2Stepper(int af_motor, int pinStopMin, int pinStopMax,
+        Axis_AF2Stepper(int af_motor,
+                        int pinStopMin, int pinStopMax, unsigned int mm_per_min_max,
                         float maxPosMM,
                         unsigned int stepsPerRotation, 
                         float mmPerRotation)
-            : Axis_Stepper(pinStopMin, pinStopMax, maxPosMM,
-                           MICROSTEPS, stepsPerRotation, mmPerRotation)
+            : Axis_Stepper(pinStopMin, pinStopMax, mm_per_min_max,
+                           maxPosMM,
+                           1, stepsPerRotation/2, mmPerRotation)
         {
             _motor = AFMS.getStepper(stepsPerRotation, af_motor);
         }
@@ -65,6 +67,7 @@ class Axis_AF2Stepper : public Axis_Stepper {
                 dir = FORWARD;
             }
 
+#if 0
             if (steps > MICROSTEPS * 2) {
                 _motor->onestep(dir, DOUBLE);
                 return neg * (MICROSTEPS * 2);
@@ -72,14 +75,16 @@ class Axis_AF2Stepper : public Axis_Stepper {
 
             if (steps > MICROSTEPS) {
                 _motor->onestep(dir, SINGLE);
-                return neg * (MICROSTEPS * 2);
+                return neg * MICROSTEPS;
             }
 
             _motor->onestep(dir, MICROSTEP);
+#else
+            _motor->onestep(dir, DOUBLE);
+#endif
             return neg;
         }
 };
-
 
 #endif /* AXIS_AF2STEPPER_H */
 /* vim: set shiftwidth=4 expandtab:  */

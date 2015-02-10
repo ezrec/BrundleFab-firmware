@@ -32,11 +32,13 @@ class Axis {
         bool _enabled, _updated;
         int _pinStopMin;
         int _pinStopMax;
-        protected:
+
+        unsigned int _velocityMax;
+    protected:
         struct {
             float mm;
             unsigned long ms;
-            float velocity;
+            unsigned int velocity;      /* mm/minute */
         } _target;
 
     public:
@@ -51,8 +53,9 @@ class Axis {
         /* NOTE: This class assumes that all endstops are
          *       normally closed switches to ground.
          */
-        Axis(int pinStopMin = -1, int pinStopMax = -1)
+        Axis(int pinStopMin = -1, int pinStopMax = -1, unsigned int mm_per_minute_max = 0)
         {
+            _velocityMax = mm_per_minute_max ? mm_per_minute_max : 2000;
             _pinStopMin = pinStopMin;
             _pinStopMax = pinStopMax;
         }
@@ -134,12 +137,21 @@ class Axis {
 
         virtual void target_set(float mm, unsigned long ms = 0)
         {
-            if (ms > 0)
-                _target.velocity = fabs(mm / ms);
-            else
-                _target.velocity = 0;
+            unsigned long mm_per_minute;
+            float mm_distance = fabs(mm - _target.mm);
 
-            _target.ms = millis() + ms;
+            if (ms > 0) {
+                mm_per_minute = mm_distance * 60000 / ms;
+                if (mm_per_minute < 1)
+                    mm_per_minute = _velocityMax;
+                else if (mm_per_minute  > _velocityMax)
+                    mm_per_minute = _velocityMax;
+            } else {
+                mm_per_minute = _velocityMax;
+            }
+
+            _target.velocity = mm_per_minute;
+            _target.ms = millis() + mm_distance * mm_per_minute / 60 / 1000;
             _target.mm = mm;
             _updated = false;
         }

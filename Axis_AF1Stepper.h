@@ -29,12 +29,13 @@ class Axis_AF1Stepper : public Axis_Stepper {
         AF_Stepper *_motor;
 
     public:
-        Axis_AF1Stepper(int af_motor, int pinStopMin, int pinStopMax,
+        Axis_AF1Stepper(int af_motor,
+                        int pinStopMin, int pinStopMax, unsigned int mm_per_min_max,
                         float maxPosMM,
                         unsigned int stepsPerRotation, float mmPerRotation)
-            : Axis_Stepper(pinStopMin, pinStopMax,
+            : Axis_Stepper(pinStopMin, pinStopMax, mm_per_min_max,
                            maxPosMM,
-                           MICROSTEPS, stepsPerRotation, mmPerRotation),
+                           1, stepsPerRotation/2, mmPerRotation),
              _adaMotor(stepsPerRotation, af_motor)
         {
             _motor = &_adaMotor;
@@ -63,23 +64,12 @@ class Axis_AF1Stepper : public Axis_Stepper {
             if (steps < 0) {
                 dir = BACKWARD;
                 neg = -1;
-                steps = -steps;
             } else {
                 dir = FORWARD;
                 neg = 1;
             }
 
-            if (steps > MICROSTEPS * 2) {
-                _motor->onestep(dir, DOUBLE);
-                return neg * (MICROSTEPS * 2);
-            }
-
-            if (steps > MICROSTEPS) {
-                _motor->onestep(dir, SINGLE);
-                return neg *  MICROSTEPS;
-            }
-
-            _motor->onestep(dir, MICROSTEP);
+            _motor->onestep(dir, DOUBLE);
             return neg;
         }
 };

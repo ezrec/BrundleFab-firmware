@@ -29,13 +29,9 @@ class Axis_Stepper : public Axis {
         int32_t _maxPos;
         static const int32_t _minPos = 0;
 
-        float _mm_to_usteps;
+        float _usteps_per_mm;
         int32_t _position;
         int32_t _target_position;
-        struct {
-            unsigned int msec;
-            unsigned int usec;
-        } _delay_per_step;
 
         enum {
             IDLE,
@@ -45,9 +41,9 @@ class Axis_Stepper : public Axis {
         } _mode;
         struct {
             unsigned long timeout;
-            int32_t steps;
+            int steps;
             enum axis_stop_e pin;
-            float target;
+            int32_t position;
         } _homing;
         struct {
             unsigned long timeout;
@@ -60,7 +56,7 @@ class Axis_Stepper : public Axis {
         } _udelay;
 
     public:
-        Axis_Stepper(int pinStopMin, int pinStopMax,
+        Axis_Stepper(int pinStopMin, int pinStopMax, unsigned int mm_per_min_max,
                      float maxPosMM, unsigned int microSteps,
                      unsigned int stepsPerRotation, float mmPerRotation)
             : Axis(pinStopMin, pinStopMax)
@@ -68,16 +64,18 @@ class Axis_Stepper : public Axis {
             _microSteps = microSteps;
             _stepsPerRotation = stepsPerRotation;
             _mmPerRotation = mmPerRotation;
-            _mm_to_usteps = _stepsPerRotation * _microSteps / _mmPerRotation;
-            _maxPos = maxPosMM * _mm_to_usteps;
+            _usteps_per_mm = _stepsPerRotation * _microSteps / _mmPerRotation;
+            _maxPos = maxPosMM * _usteps_per_mm;
 
             _position = 0;
             if (pinStopMin >= 0) {
-                _homing.steps = min(-0.5 * _mm_to_usteps, -1);
+                _homing.steps = microSteps;
                 _homing.pin = Axis::STOP_MIN_SWITCH;
+                _homing.position = _minPos;
             } else if (pinStopMax >= 0) {
-                _homing.steps = max(0.5 * _mm_to_usteps, 1);
+                _homing.steps = microSteps;
                 _homing.pin = Axis::STOP_MAX_SWITCH;
+                _homing.position = _maxPos;
             } else {
                 _homing.steps = 0;
                 _homing.pin = Axis::STOP_NONE;
@@ -95,18 +93,19 @@ class Axis_Stepper : public Axis {
 
         virtual void home(float mm)
         {
-            _homing.target = mm;
+            Axis::home(mm);
+
             _mode = HOMING;
         }
 
         virtual float position_min()
         {
-            return _minPos / _mm_to_usteps;
+            return _minPos / _usteps_per_mm;
         }
 
         virtual float position_max()
         {
-            return _maxPos / _mm_to_usteps;
+            return _maxPos / _usteps_per_mm;
         }
 
         virtual bool motor_active()
@@ -116,19 +115,16 @@ class Axis_Stepper : public Axis {
 
         virtual float position_get(void)
         {
-            return _position / _mm_to_usteps;
+            return _position / _usteps_per_mm;
         }
 
         virtual void target_set(float mm, unsigned long ms = 0)
         {
             Axis::target_set(mm, ms);
 
-            _target_position = mm * _mm_to_usteps;
-            if (ms) {
-                _udelay.per_step = ms * 1000 / abs(_target_position - _position);
-            } else {
-                _udelay.per_step = 1000;
-            }
+            _target_position = mm * _usteps_per_mm;
+            /* usec/ustep = usec/minute * minute/mm * mm/ustep */
+            _udelay.per_step = 60000000UL / _target.velocity /  _usteps_per_mm;
         }
 
         virtual bool update()
@@ -136,14 +132,14 @@ class Axis_Stepper : public Axis {
             int32_t pos = _position;
             int32_t tar = _target_position;
 
-            if (tar >= _maxPos)
-                tar = _maxPos - 1;
-
-            if (tar < _minPos)
-                tar = _minPos;
-
             switch (_mode) {
             case IDLE:
+                if (tar >= _maxPos)
+                    tar = _maxPos - 1;
+
+                if (tar < _minPos)
+                    tar = _minPos;
+
                 if (tar != pos) {
                     _udelay.last = micros();
                     _udelay.this_step = 0;
@@ -153,14 +149,13 @@ class Axis_Stepper : public Axis {
             case HOMING:
                 if (_homing.steps == 0) {
                     _mode = IDLE;
-                    Axis::home(_homing.target);
                     break;
                 }
                 if (endstop(_homing.pin)) {
                     _homing.timeout = millis()+1;
                     _mode = HOMING_QUIESCE;
                 } else {
-                    step(_homing.steps);
+                    _step(_homing.steps);
                 }
                 break;
             case HOMING_QUIESCE:
@@ -174,43 +169,54 @@ class Axis_Stepper : public Axis {
                 if (millis() >= _homing.timeout) {
                     if (endstop(_homing.pin)) {
                         /* If we are still on the endstop, back slowly */
-                        step(_homing.steps > 0 ? -1 : 1);
+                        if (!_step(_homing.steps > 0 ? -1 : 1))
+                            break;
                         _homing.timeout = millis()+10;
                     } else {
-                        _position = (_homing.steps > 0) ? _maxPos : _minPos;
+                        _position = _homing.position;
                         _mode = IDLE;
-                        Axis::home(_homing.target);
                     }
                 }
                 break;
             case MOVING:
-                if (tar >= pos && endstop(Axis::STOP_MAX)) {
+                if (tar > pos && endstop(Axis::STOP_MAX)) {
+                    _position = _maxPos;
                     _mode = IDLE;
                     break;
                 }
 
-                if (tar <= pos && endstop(Axis::STOP_MIN)) {
+                if (tar < pos && endstop(Axis::STOP_MIN)) {
+                    _position = _minPos;
                     _mode = IDLE;
                     break;
                 }
 
                 if (pos == tar)
                     _mode = IDLE;
-                else {
-                    unsigned long usec_now = micros();
-                    if ((usec_now - _udelay.last) >= _udelay.this_step) {
-                        int steps = step(tar - pos);
-                        _position += steps;
-                        _udelay.this_step = steps  * _udelay.per_step;
-                    }
-                }
+                else
+                    _step(tar-pos);
+
                 break;
             }
 
             return (_mode == IDLE) ? false : true;
         }
-};
 
+    private:
+        bool _step(int32_t steps)
+        {
+            unsigned long usec_now = micros();
+            if ((usec_now - _udelay.last) >= _udelay.this_step) {
+                int stepped;
+                stepped = step(steps);
+                _position += stepped;
+                _udelay.this_step = (unsigned long)abs(stepped) * _udelay.per_step;
+                _udelay.last = micros();
+                return true;
+            }
+            return false;
+        }
+};
 
 #endif /* AXIS_STEPPER_H */
 /* vim: set shiftwidth=4 expandtab:  */

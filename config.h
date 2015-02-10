@@ -17,7 +17,12 @@
 #define X_MM_MAX                747.0
 #define Y_MM_MAX                229.0
 #define Z_MM_MAX                200.0
-#define E_MM_MAX                200.0
+#define E_MM_MAX                225.0
+
+#define X_FEED_MAX              2000    /* mm/minute */
+#define Y_FEED_MAX              20000   /* mm/minute */
+#define Z_FEED_MAX              2000    /* mm/minute */
+#define E_FEED_MAX              2000    /* mm/minute */
 
 #define ARRAY_SIZE(x)           (sizeof(x)/sizeof((x)[0]))
 
