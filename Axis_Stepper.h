@@ -69,7 +69,7 @@ class Axis_Stepper : public Axis {
 
             _position = 0;
             if (pinStopMin >= 0) {
-                _homing.steps = microSteps;
+                _homing.steps = -microSteps;
                 _homing.pin = Axis::STOP_MIN_SWITCH;
                 _homing.position = _minPos;
             } else if (pinStopMax >= 0) {
