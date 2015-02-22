@@ -115,7 +115,7 @@ if (DEBUG) {
             }
         }
 
-        virtual bool update(unsigned long now_ms)
+        virtual bool update()
         {
             if (_recv()) {
 if (DEBUG) if (_status.state != 4) { Serial.print("status: 0x");Serial.println(_status.state, HEX); }
@@ -151,7 +151,7 @@ if (DEBUG) Serial.println("target_set: Homing");
             Axis::home(pos);
         }
 
-        virtual void target_set(float mm, float time_min)
+        virtual void target_set(float mm, unsigned long ms)
         {
             int32_t pos = mm * _dotlines_per_mm;
 
@@ -170,7 +170,7 @@ if (DEBUG) Serial.println(pos - _dotline);
                 _dotline = pos;
             }
 
-            Axis::target_set(mm, time_min);
+            Axis::target_set(mm, ms);
         }
 
     private:
