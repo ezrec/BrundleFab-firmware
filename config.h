@@ -14,7 +14,7 @@
 #define SERIAL_SPEED            115200
 //#define SERIAL_SPEED            1000000 /* 1Mbit */
 
-#define X_MM_MAX                747.0
+#define X_MM_MAX                650.0
 #define Y_MM_MAX                229.0
 #define Z_MM_MAX                200.0
 #define E_MM_MAX                225.0
