@@ -34,7 +34,7 @@
 #define X_STP_MIN               35      /* Endstop (minimum) */
 #define X_STP_MAX               33      /* Endstop (maximum) */
 #define X_TURN_STEPS            200     /* Steps/full rotation */
-#define X_TURN_MM               76.0    /* mm/full rotation */
+#define X_TURN_MM               33.0    /* mm/full rotation */
 #define X_MOTOR(name)           Axis_AF1Stepper name(2, X_STP_MIN, X_STP_MAX, \
                                                X_FEED_MAX, X_MM_MAX, \
                                                X_TURN_STEPS, X_TURN_MM)
