@@ -18,7 +18,6 @@ ARDUINO_LIBS = Adafruit_MotorShield \
 	       Adafruit_MotorShield/utility \
 	       AFMotor \
 	       Encoder \
-	       InkShieldMega \
 	       Adafruit_ST7735 \
 	       Adafruit_GFX \
 	       SPI \
