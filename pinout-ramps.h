@@ -38,6 +38,7 @@
 #define X_MICROSTEP             16
 #define X_MOTOR(name)           Axis_A4988 name(X_ENABLE, X_STEP, X_DIR, \
                                            X_STP_MIN, X_STP_MAX, \
+					   X_FEED_MAX, \
                                            X_MM_MAX, X_MICROSTEP, \
                                            X_TURN_STEPS, X_TURN_MM)
 
@@ -55,6 +56,7 @@
 #define Z_MICROSTEP             16
 #define Z_MOTOR(name)           Axis_A4988 name(Z_ENABLE, Z_STEP, Z_DIR, \
                                            Z_STP_MIN, Z_STP_MAX, \
+					   Z_FEED_MAX, \
                                            Z_MM_MAX, Z_MICROSTEP, \
                                            Z_TURN_STEPS, Z_TURN_MM)
 
@@ -69,6 +71,7 @@
 #define E_MICROSTEP             16
 #define E_MOTOR(name)           Axis_A4988 name(E_ENABLE, E_STEP, E_DIR, \
                                            E_STP_MIN, E_STP_MAX, \
+					   E_FEED_MAX, \
                                            E_MM_MAX, E_MICROSTEP, \
                                            E_TURN_STEPS, E_TURN_MM)
 
