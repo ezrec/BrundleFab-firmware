@@ -25,76 +25,49 @@
 /**
  * Printhead
  */
-#define STATUS_MOTOR_ON         (1 << 0)
-#define STATUS_MOTOR_STALL      (1 << 1)
-#define STATUS_MOTOR_MIN        (1 << 2)
-#define STATUS_MOTOR_MAX        (1 << 3)
-#define STATUS_HEATER_ON        (1 << 4)
-#define STATUS_HEATER_STABLE    (1 << 5)
-#define STATUS_INK_ON           (1 << 6)
-#define STATUS_INK_EMPTY        (1 << 7)
+#include "BrundleInk.h"
 
 class InkBar : public Tool, public Axis {
     private:
         static const int DEBUG = 0;
-        HardwareSerial *_io;
+	static const int TIMEOUT_MS = 100;
+        BrundleInk _ink;
         float _mm_min, _mm_max;
         float _dotlines_per_mm;
         int32_t _dotline;
-        bool _inking;
-        uint16_t _pattern;
+        uint16_t _pattern, _sprays;
+        unsigned long _next_status, _next_motor;
 
-        struct {
-            uint8_t state;
-            uint8_t sprays;
-            uint16_t space;
-            uint8_t temp;
-        } _status;
-
-        struct {
-            bool waiting;
-            char buff[16];
-            int pos;
-        } _response;
+	enum inkbar_state {
+	    STATE_IDLE = 0,
+	    STATE_HOME,
+	    STATE_INK_FORWARD,
+	    STATE_INK_REVERSE,
+	    STATE_INK_CLEAR,
+	} _state;
 
     public:
-        InkBar(HardwareSerial *io, float mm_min, float mm_max, float dotlines_per_mm)
+        InkBar(HardwareSerial *io, float mm_min, float mm_max, float dotlines_per_mm) :
+            _ink(io)
         {
-            _io = io;
             _mm_min = mm_min;
             _mm_max = mm_max;
             _dotlines_per_mm = dotlines_per_mm;
+	    _state = STATE_IDLE;
+	    _sprays = 4;
         }
-
 
         void begin()
         {
-            bool done = false;
-
-            _io->begin(115200);
-
-            /* Attempt to communicate with the device */
-            do {
-                unsigned long timeout = millis() + 2000;
-                _response.waiting = false;
-                _send('?');
-                while (millis() < timeout) {
-                    if (_recv()) {
-                        done = true;
-                        break;
-                    }
-                }
-            } while (!done);
-
-            _dotline = 0;
+            _ink.begin();
+            _next_status = millis() + 100;
+            _ink.cmd('s', _sprays-1);
         }
 
         /* Tool specific functions */
 
         void parm(enum parm_e p, float val)
         {
-            uint16_t sprays;
-
             switch (p) {
             case Tool::PARM_P:
 if (DEBUG) {
@@ -103,12 +76,11 @@ if (DEBUG) {
                 _pattern = (uint16_t)val;
                 break;
             case Tool::PARM_S:
-                /* Convert from dots/mm to sprays/dotline */
-                sprays = val / _dotlines_per_mm;
+                _sprays = (val < 2) ? 2 : val;
 if (DEBUG) {
-    Serial.print("parm: Spray ");Serial.println(sprays);
+    Serial.print("parm: Spray ");Serial.println(_sprays);
 }
-                _send('s', sprays);
+                _ink.cmd('s', _sprays-1);
                 break;
             default:
                 break;
@@ -117,22 +89,51 @@ if (DEBUG) {
 
         virtual bool update()
         {
-            if (_recv()) {
-if (DEBUG) if (_status.state != 4) { Serial.print("status: 0x");Serial.println(_status.state, HEX); }
-                if (_status.state & STATUS_INK_ON) {
-                    _inking = true;
-                }
-                if (_inking & !(_status.state & STATUS_INK_ON)) {
-                    /* When we're done inking, home the bar */
-                    _inking = false;
-if (DEBUG) Serial.println("target_set: Homing");
-                    _send('h');
-                    _dotline = 0;
-                }
+            enum inkbar_state in_state = _state;
+            bool motor_timeout = millis() > _next_motor;
+
+            if (_ink.busy()) {
+                if (!_ink.recv())
+                    return true;
+                _next_status = millis() + 100;
             }
 
-            if (!_response.waiting)
-                _send('?');
+            switch (_state) {
+            case STATE_IDLE:
+                    break;
+            case STATE_HOME:
+                    if (motor_timeout || !_ink.motor_on()) {
+                        _state = STATE_IDLE;
+                        _dotline = 0;
+                    }
+                    break;
+            case STATE_INK_FORWARD:
+                    if (motor_timeout || !_ink.motor_on()) {
+                        _state = STATE_INK_REVERSE;
+                        _ink.send('j');
+                        _next_motor = millis() + (_sprays + 1) * 1000;
+                    }
+                    break;
+            case STATE_INK_REVERSE:
+                    if (motor_timeout || !_ink.motor_on()) {
+                        _state = STATE_INK_CLEAR;
+                        _ink.send('k');
+                    }
+                    break;
+            case STATE_INK_CLEAR:
+                    _dotline = 0;
+                    _state = STATE_IDLE;
+                    break;
+            }
+
+if (DEBUG && in_state != _state) {
+    Serial.print("MODE: ");Serial.print(in_state);
+    Serial.print(" => ");Serial.println(_state);
+}
+
+            if (!_ink.busy() && (millis() > _next_status)) {
+                _ink.send('?');
+            }
 
             return motor_active();
         }
@@ -140,15 +141,22 @@ if (DEBUG) Serial.println("target_set: Homing");
         /* Axis commands */
         virtual bool motor_active()
         {
-            return (_status.state & STATUS_MOTOR_ON) ? true : false;
+            return (_state != STATE_IDLE);
         }
 
-        virtual void home(int32_t pos)
+        virtual void home(float mm )
         {
-            _send('h');
-            _dotline = 0;
+if (DEBUG) {
+	Serial.print("home: ");
+	Serial.println(mm);
+}
+            while (_ink.busy())
+                _ink.recv();
 
-            Axis::home(pos);
+            _ink.send('h');
+	    _state = STATE_HOME;
+
+            Axis::home(mm);
         }
 
         virtual void target_set(float mm, unsigned long ms)
@@ -158,95 +166,25 @@ if (DEBUG) Serial.println("target_set: Homing");
             /* Moving backwards? Ink the bar... */
             if (pos < _dotline) {
 if (DEBUG) Serial.println("target_set: Inking");
-                _send('i');
-                _status.state |= 1;
-                _inking = true;
+                while (_ink.busy())
+                    _ink.recv();
+                _ink.send('i');
+                _state = STATE_INK_FORWARD;
+                _next_motor = millis() + (_sprays + 1) * 1000;
+if (DEBUG) Serial.println("MODE: 0 => 2");
             } else if (_dotline != pos) {
 if (DEBUG) Serial.print("target_set: Repeat ");
 if (DEBUG) Serial.println(pos - _dotline);
-                _send('l',_pattern);
+                while (_ink.busy())
+                    _ink.recv();
+                _ink.cmd('l',_pattern);
                 if ((pos - _dotline) > 1)
-                    _send('r', (pos - _dotline) - 1);
+                    _ink.cmd('r', (pos - _dotline) - 1);
                 _dotline = pos;
             }
 
             Axis::target_set(mm, ms);
         }
-
-    private:
-        bool _send(char cmd, uint16_t val = 0)
-        {
-            _recv_flush();
-
-if (DEBUG) if (cmd != '?') {
-    Serial.print("TX: ");
-    Serial.print(cmd);
-    Serial.println(val, HEX);
-}
-            _io->print(cmd);
-            _io->println(val, HEX);
-            _response.waiting = true;
-            return true;
-        }
-
-        void _recv_flush()
-        {
-            if (!_response.waiting)
-                return;
-
-            while (!_recv());
-        }
-
-        bool _recv()
-        {
-            if (!_response.waiting)
-                return false;
-
-            if (!_io->available())
-                return false;
-
-            char c = _io->read();
-if (DEBUG) {
-    if (c >= ' ') Serial.print(c);
-    if (c == '\r') { Serial.println(); }
-    if (c == '\n') { Serial.print("RX: "); }
-}
-            if (c == '\n')
-                return false;
-
-            if (c == '\r') {
-                unsigned s, i, n, t;
-                _response.buff[_response.pos] = 0;
-                int rc;
-
-                rc = sscanf(_response.buff, "ok %x %x %x %x", &s, &i, &n, &t);
-                _response.pos = 0;
-if (DEBUG || n < 10) {
-    Serial.print("rc: ");Serial.print(rc);
-    Serial.print(" s: 0x");Serial.print(s, HEX);
-    Serial.print(" i: ");Serial.print(i, DEC);
-    Serial.print(" n: ");Serial.print(n, DEC);
-    Serial.print(" t: ");Serial.print(t*2, DEC);
-    Serial.println("C");
-}
-                if (rc != 4) {
-                    return false;
-                }
-                _status.state = s;
-                _status.sprays = i;
-                _status.space = n;
-                _status.temp = t;
-                _response.waiting = false;
-
-                return true;
-            }
-
-            if (_response.pos < (int)(ARRAY_SIZE(_response.buff)-1))
-                _response.buff[_response.pos++] = c;
-
-            return false;
-        }
-
 };
 
 #endif /* INKBAR_H */
