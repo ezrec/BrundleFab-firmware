@@ -39,8 +39,8 @@
                                                X_FEED_MAX, X_MM_MAX, \
                                                X_TURN_STEPS, X_TURN_MM)
 
-/* Y is driven by the inkbar  - 9", 96 DPI */
-#define Y_MOTOR(name)           InkBar name(&Serial3,  0, 25.4 * 9.0, 96.0 / 25.4)
+/* Y is driven by the inkbar  - 8.75", 96 DPI */
+#define Y_MOTOR(name)           InkBar name(&Serial3,  0, 8.75 * 25.4, 96.0 / 25.4)
 
 #define Z_STP_MIN               -1      /* Endstop (Minimim) */
 #define Z_STP_MAX               39      /* Endstop (Maximim) */
