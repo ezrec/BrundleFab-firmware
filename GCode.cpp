@@ -287,8 +287,6 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     for (i = 0; i < AXIS_MAX; i++) {
         if (state.update_mask & GCODE_UPDATE_AXIS(i)) {
             state.axis[i] *= _units_to_mm;
-            if (_positioning == ABSOLUTE)
-                state.axis[i] += _offset[i];
         }
     }
     if (state.update_mask & GCODE_UPDATE_F)
