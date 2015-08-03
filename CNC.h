@@ -164,7 +164,7 @@ class CNC {
 
             _program = *program;
             *program = File();
-                   
+
             if (_program) {
                 status_set(NULL);
                 message_set(_program.name());
@@ -214,7 +214,7 @@ class CNC {
                 strncpy(_status, message, CNC_STATUS_MAX);
             }
         }
-        
+
         const char *status_get()
         {
             return _status[0] ? _status : NULL;
@@ -246,7 +246,7 @@ class CNC {
             bool pressed;
 
             pressed = (_button_mask & mask) ? true : false;
-                
+
             _button_mask &= ~mask;
 
             return pressed;

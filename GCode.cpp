@@ -86,7 +86,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
                 mode = FLOAT_FRAC;
                 continue;
             }
-           
+
             if (c == '-') {
                 neg *= -1;
                 continue;
@@ -145,7 +145,7 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
                 continue;
             }
         }
-                
+
         if (isspace(c))
             continue;
 
