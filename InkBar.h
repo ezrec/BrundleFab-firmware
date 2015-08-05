@@ -65,6 +65,14 @@ class InkBar : public Tool, public Axis {
         }
 
         /* Tool specific functions */
+        void stop(void)
+        {
+            /* Flush any pending dots */
+            if (_dotline > 0)
+                _ink_forward();
+
+            Tool::stop();
+        }
 
         void parm(enum parm_e p, float val)
         {
@@ -85,6 +93,28 @@ if (DEBUG) {
             default:
                 break;
             }
+        }
+
+        void _ink_forward()
+        {
+            while (_state != STATE_IDLE)
+                update();
+
+            _state = STATE_INK_FORWARD;
+            _ink.send('i');
+            _next_motor = millis() + (_sprays + 1) * 1000;
+if (DEBUG) Serial.println("MODE: 0 => 2");
+        }
+
+        void _ink_reverse()
+        {
+            while (_state != STATE_IDLE)
+                update();
+
+            _state = STATE_INK_REVERSE;
+            _ink.send('j');
+            _next_motor = millis() + (_sprays + 1) * 1000;
+if (DEBUG) Serial.println("MODE: 0 => 3");
         }
 
         virtual bool update()
@@ -109,9 +139,13 @@ if (DEBUG) {
                     break;
             case STATE_INK_FORWARD:
                     if (motor_timeout || !_ink.motor_on()) {
-                        _state = STATE_INK_REVERSE;
-                        _ink.send('j');
-                        _next_motor = millis() + (_sprays + 1) * 1000;
+                        _state = STATE_IDLE;
+
+                        /* If the tool was still active,
+                         * then issue a reverse also
+                         */
+                        if (active())
+                            _ink_reverse();
                     }
                     break;
             case STATE_INK_REVERSE:
@@ -165,13 +199,14 @@ if (DEBUG) {
 
             /* Moving backwards? Ink the bar... */
             if (pos < _dotline) {
-if (DEBUG) Serial.println("target_set: Inking");
-                while (_ink.busy())
-                    _ink.recv();
-                _ink.send('i');
-                _state = STATE_INK_FORWARD;
-                _next_motor = millis() + (_sprays + 1) * 1000;
-if (DEBUG) Serial.println("MODE: 0 => 2");
+                /* If the tool is still active, move forward */
+                if (active()) {
+if (DEBUG) Serial.println("target_set: Inking forward");
+                    _ink_forward();
+                } else {
+if (DEBUG) Serial.println("target_set: Inking reverse");
+                    _ink_reverse();
+                }
             } else if (_dotline != pos) {
 if (DEBUG) Serial.print("target_set: Repeat ");
 if (DEBUG) Serial.println(pos - _dotline);
