@@ -349,6 +349,7 @@ void GCode::_block_do(struct gcode_block *blk)
 {
     Stream *out = blk->io->out;
     ToolHead *th;
+    bool tool_change;
 #if ENABLE_SD
     File tmp_file, *program;
 
@@ -359,8 +360,13 @@ void GCode::_block_do(struct gcode_block *blk)
     case 'T':
         th = _cnc->toolhead();
 
-        th->stop();
-        th->select(blk->cmd);
+        tool_change = th->selected() != blk->cmd;
+
+        if (tool_change) {
+            th->stop();
+            th->select(blk->cmd);
+        }
+
         if (blk->update_mask & GCODE_UPDATE_P)
             th->parm(Tool::PARM_P, blk->p);
         if (blk->update_mask & GCODE_UPDATE_Q)
@@ -369,7 +375,10 @@ void GCode::_block_do(struct gcode_block *blk)
             th->parm(Tool::PARM_R, blk->r);
         if (blk->update_mask & GCODE_UPDATE_S)
             th->parm(Tool::PARM_S, blk->s);
-        th->start();
+
+        if (tool_change)
+            th->start();
+
         break;
     case 'G':
         switch (blk->cmd) {
@@ -646,7 +655,7 @@ void GCode::update(bool cnc_active)
 void GCode::_process_io(struct gcode_io *io)
 {
     struct gcode_block *blk;
-    
+
     /* If paused, wait for the Cycle Start button to be pressed
      */
     if (!_enabled(io)) {
@@ -664,7 +673,7 @@ void GCode::_process_io(struct gcode_io *io)
 
     if (io->in->available()) {
         char c;
-        
+
         if (io->line.len == 0)
             _debug->print("// ");
 
