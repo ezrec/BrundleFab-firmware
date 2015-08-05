@@ -36,7 +36,6 @@
 #include "Visualize.h"
 #endif
 
-#if ENABLE_CNC
 #include "Axis_DCEncoder.h"
 #include "Axis_AF1Stepper.h"
 #include "Axis_AF2Stepper.h"
@@ -44,22 +43,34 @@
 
 #include "InkBar.h"
 #include "ToolFuser.h"
-#endif
 
-#if ENABLE_CNC
+#if ENABLE_AXIS_X
 X_MOTOR(axisX);
-Y_MOTOR(axisY);
-Z_MOTOR(axisZ);
-E_MOTOR(axisE);
-
-Tool toolFuser; /* This tool is part of the inkBar, and is always on */
-
 #else
 Axis axisX;
-Axis axisY;
-Axis axisZ;
-Axis axisE;
+#endif
 
+#if ENABLE_AXIS_Y
+Y_MOTOR(axisY);
+#else
+Axis axisY;
+#endif
+
+#if ENABLE_AXIS_Z
+Z_MOTOR(axisZ);
+#else
+Axis axisZ;
+#endif
+
+#if ENABLE_AXIS_E
+E_MOTOR(axisE);
+#else
+Axis axisE;
+#endif
+
+#if ENABLE_TOOL_FUSER
+Tool toolFuser; /* This tool is part of the inkBar, and is always on */
+#else
 Tool toolInk_Black;
 Tool toolFuser;
 #endif
