@@ -22,6 +22,7 @@ ARDUINO_LIBS = Adafruit_MotorShield \
 	       Encoder \
 	       Adafruit_ST7735 \
 	       Adafruit_GFX \
+	       BrundleInk \
 	       SPI \
 	       SD \
 	       Wire
