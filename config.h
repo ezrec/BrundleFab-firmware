@@ -9,11 +9,11 @@
 
 #define ENABLE_UI               1
 #define ENABLE_SD               1
-#define ENABLE_AXIS_X           0
+#define ENABLE_AXIS_X           1
 #define ENABLE_AXIS_Y           1
-#define ENABLE_AXIS_Z           0
-#define ENABLE_AXIS_E           0
-#define ENABLE_TOOL_FUSER       0
+#define ENABLE_AXIS_Z           1
+#define ENABLE_AXIS_E           1
+#define ENABLE_TOOL_FUSER       1
 
 #define SERIAL_SPEED            115200
 //#define SERIAL_SPEED            1000000 /* 1Mbit */
