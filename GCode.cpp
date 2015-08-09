@@ -276,7 +276,10 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
              state.cmd == 29 ||  /* G29 - Detailed Z-probe */
              state.cmd == 30 ||  /* G30 - Single Z-probe */
              state.cmd == 31 ||  /* G31 - Report Current Probe Status */
-             state.cmd == 32)) {  /* G32 - Probe Z and caclulate Z plane */
+             state.cmd == 32 ||  /* G32 - Probe Z and caclulate Z plane */
+             state.cmd == 90 ||  /* G90 - Set absolute mode */
+             state.cmd == 91 ||  /* G91 - Set relative mode */
+             0 )) {
         state.buffered = true;
     } else if (state.code == 'T') {
         state.buffered = true;
