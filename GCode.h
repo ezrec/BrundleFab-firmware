@@ -158,7 +158,7 @@ class GCode {
         bool file_select(const char *filename, bool start = false)
         {
             bool opened;
-            
+
             opened = _cnc->program_set(filename);
 
             if (!opened)
@@ -172,7 +172,7 @@ class GCode {
 
         void file_start()
         {
-            
+
             _start(&_program);
         }
 
