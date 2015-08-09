@@ -67,21 +67,7 @@ class Axis_AF2Stepper : public Axis_Stepper {
                 dir = FORWARD;
             }
 
-#if 0
-            if (steps > MICROSTEPS * 2) {
-                _motor->onestep(dir, DOUBLE);
-                return neg * (MICROSTEPS * 2);
-            }
-
-            if (steps > MICROSTEPS) {
-                _motor->onestep(dir, SINGLE);
-                return neg * MICROSTEPS;
-            }
-
-            _motor->onestep(dir, MICROSTEP);
-#else
             _motor->onestep(dir, DOUBLE);
-#endif
             return neg;
         }
 };
