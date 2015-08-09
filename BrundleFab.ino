@@ -68,10 +68,11 @@ E_MOTOR(axisE);
 Axis axisE;
 #endif
 
-#if ENABLE_TOOL_FUSER
-Tool toolFuser; /* This tool is part of the inkBar, and is always on */
-#else
 Tool toolInk_Black;
+
+#if ENABLE_TOOL_FUSER
+FUSER(toolFuser);
+#else
 Tool toolFuser;
 #endif
 
@@ -102,6 +103,7 @@ void setup()
 
     tools.attach(TOOL_INK_BLACK, (Tool *)&axisY);
     tools.attach(TOOL_FUSER, &toolFuser);
+    toolFuser.begin();
     tools.begin();
 
 #if ENABLE_UI

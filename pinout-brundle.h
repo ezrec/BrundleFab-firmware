@@ -59,6 +59,14 @@
                                                 E_TURN_STEPS, E_TURN_MM)
 
 #define FUSER_ENABLE            43      /* Heater enable */
+/* 250K ohm - 25C, Beta 4066:
+ *
+ * 5v - Themistor - A0 - 1.8K - GND
+ *
+ */
+#define FUSER_TEMP_ADC          0       /* A0 */
+
+#define FUSER(name)             ToolFuser name(FUSER_ENABLE, FUSER_TEMP_ADC)
 
 #endif /* PINOUT_BRUNDLE_H */
 /* vim: set shiftwidth=4 expandtab:  */
