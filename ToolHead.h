@@ -28,11 +28,13 @@ class ToolHead : Tool {
     private:
         int _id;
         Tool *_tool;            /* Current tool */
+        const float *_offset;   /* Current offset */
 
         int _tools;
         struct {
             int id;
             Tool *tool;
+            float offset[AXIS_MAX];
         } _map[MAX_TOOLS];
 
         Tool _tool_null;
@@ -77,6 +79,7 @@ class ToolHead : Tool {
                 if (_map[i].id == tool) {
                     _id = _map[i].id;
                     _tool = _map[i].tool;
+                    _offset = &_map[i].offset[0];
                     return true;
                 }
             }
@@ -118,6 +121,25 @@ class ToolHead : Tool {
         {
             return _tool->parm_get(p);
         }
+
+        virtual bool offset_set(int tool, float *pos, uint8_t axis_mask)
+        {
+            for (int i = 0; i < _tools; i++) {
+                if (_map[i].id == tool) {
+                    for (int j = 0; j < AXIS_MAX; j++) {
+                        if ((1 << j) && axis_mask)
+                            _map[i].offset[j] = pos[j];
+                    }
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        virtual const float *offset_is()
+        {
+            return _offset;
         }
 };
 

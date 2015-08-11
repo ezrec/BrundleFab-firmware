@@ -81,6 +81,8 @@ class CNC {
 
         void target_move(float *pos, uint8_t axis_mask, unsigned long ms = 0)
         {
+            /* Relative moves do not need to have the tool offset applied
+             */
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i))
                     _axis[i]->target_move(pos[i], ms);
@@ -89,9 +91,11 @@ class CNC {
 
         void target_set(float *pos, uint8_t axis_mask, unsigned long ms = 0)
         {
+            const float *offset = _toolhead->offset_is();
+
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i))
-                    _axis[i]->target_set(pos[i], ms);
+                    _axis[i]->target_set(pos[i] + offset[i], ms);
             }
         }
 
@@ -127,10 +131,11 @@ class CNC {
 
         void target_get(float *pos)
         {
-            for (int i = 0; i < AXIS_MAX; i++)
-                pos[i] = _axis[i]->target_get();
-        }
+            const float *offset = _toolhead->offset_is();
 
+            for (int i = 0; i < AXIS_MAX; i++)
+                pos[i] = _axis[i]->target_get() - offset[i];
+        }
 
 #if ENABLE_SD
         void begin(const char *filename)
@@ -271,6 +276,11 @@ class CNC {
                 _switch_mask |= mask;
             else
                 _switch_mask &= ~mask;
+        }
+
+        bool tool_offset_set(int tool, float *pos, uint8_t axis_mask)
+        {
+            return _toolhead->offset_set(tool, pos, axis_mask);
         }
 
         bool update()
