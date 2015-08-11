@@ -127,6 +127,7 @@ void setup()
     vis.color_set(VC_FEED, ST7735_YELLOW);
     vis.color_set(VC_TOOL, ST7735_WHITE);
     vis.clear(175, 260, 175);
+    vis.origin(198, 0, 0);
 #endif
 
     axisX.begin();

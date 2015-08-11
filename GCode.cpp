@@ -400,6 +400,15 @@ void GCode::_block_do(struct gcode_block *blk)
                 break;
             }
 
+#if ENABLE_UI
+            if (_vis) {
+                float pos[AXIS_MAX];
+
+                _cnc->target_get(pos);
+                _vis->cursor_to(pos);
+            }
+#endif
+
             break;
         case 1: /* G1 - Controlled move */
             if (blk->update_mask & GCODE_UPDATE_F) {
@@ -434,7 +443,26 @@ void GCode::_block_do(struct gcode_block *blk)
                     color = (blk->cmd == 0) ? VC_MOVE : VC_FEED;
                 else
                     color = VC_TOOL;
-                _vis->line_to(color, pos);
+
+                /* Brundlefab pattern render hack */
+                if (color == VC_TOOL) {
+                    uint16_t pat = _cnc->toolhead()->parm_get(Tool::PARM_P);
+                    int on = 0;
+                    for (int i = 0; i < 12; i++) {
+                        if ((1 << i) & pat)
+                            on++;
+                    }
+                    if (on == 0)
+                        color = VC_INVISIBLE;
+                    else if (on < 12)
+                        color = VC_MOVE;
+                }
+
+                if (color == VC_INVISIBLE) {
+                    _vis->cursor_to(pos);
+                } else {
+                    _vis->line_to(color, pos);
+                }
             }
 #endif
             break;
