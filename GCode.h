@@ -60,11 +60,12 @@ struct gcode_parameter {
 #define GCODE_UPDATE_I          (1 << (AXIS_MAX + 1))
 #define GCODE_UPDATE_J          (1 << (AXIS_MAX + 2))
 #define GCODE_UPDATE_K          (1 << (AXIS_MAX + 3))
-#define GCODE_UPDATE_P          (1 << (AXIS_MAX + 4))
-#define GCODE_UPDATE_Q          (1 << (AXIS_MAX + 5))
-#define GCODE_UPDATE_R          (1 << (AXIS_MAX + 6))
-#define GCODE_UPDATE_S          (1 << (AXIS_MAX + 7))
-#define GCODE_UPDATE_STRING     (1 << (AXIS_MAX + 8))
+#define GCODE_UPDATE_L          (1 << (AXIS_MAX + 4))
+#define GCODE_UPDATE_P          (1 << (AXIS_MAX + 5))
+#define GCODE_UPDATE_Q          (1 << (AXIS_MAX + 6))
+#define GCODE_UPDATE_R          (1 << (AXIS_MAX + 7))
+#define GCODE_UPDATE_S          (1 << (AXIS_MAX + 8))
+#define GCODE_UPDATE_STRING     (1 << (AXIS_MAX + 9))
 
 struct gcode_block {
     struct gcode_block *next;
@@ -80,6 +81,7 @@ struct gcode_block {
     float i;        /* x center of arc */
     float j;        /* y center of arc */
     float k;        /* z center of arc */
+    float l;        /* parameter */
     float p;        /* parameter */
     float q;        /* parameter */
     float r;        /* parameter */

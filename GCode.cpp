@@ -176,6 +176,11 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
             data.fptr = &state.k;
             state.update_mask |= GCODE_UPDATE_K;
             break;
+        case 'L':
+            mode = FLOAT;
+            data.fptr = &state.l;
+            state.update_mask |= GCODE_UPDATE_L;
+            break;
         case 'P':
             mode = FLOAT;
             data.fptr = &state.p;
@@ -432,6 +437,24 @@ void GCode::_block_do(struct gcode_block *blk)
                 _vis->line_to(color, pos);
             }
 #endif
+            break;
+        case 10: /* G10 - Tool parameters */
+            if (blk->update_mask & GCODE_UPDATE_L) {
+                switch ((int)blk->l) {
+                    case 1: /* G10 L1 - Set tool table entry */
+                        if (blk->update_mask & GCODE_UPDATE_P) {
+                            float pos[AXIS_MAX] = {};
+                            for (int i = 0; i < AXIS_MAX; i++) {
+                                if (blk->update_mask & GCODE_UPDATE_AXIS(i))
+                                    pos[i] = blk->axis[i];
+                                _cnc->tool_offset_set((int)blk->p, pos, blk->update_mask);
+                            }
+                        }
+                        break;
+                    default:
+                        break;
+                }
+            }
             break;
         case 20: /* G20 - Set units to inches */
             _units_to_mm = 25.4;
