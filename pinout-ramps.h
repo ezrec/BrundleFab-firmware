@@ -76,6 +76,8 @@
                                            E_TURN_STEPS, E_TURN_MM)
 
 #define FUSER_ENABLE            8       /* Heater enable */
+#define FUSER_TEMP              13      /* Analog 13 - TEMP0 */
+#define FUSER(name)             ToolFuser name(FUSER_ENABLE, FUSER_TEMP)
 
 #endif /* PINOUT_RAMPS_H */
 /* vim: set shiftwidth=4 expandtab:  */
