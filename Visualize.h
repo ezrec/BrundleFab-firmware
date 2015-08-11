@@ -38,7 +38,7 @@ struct point {
 
 class Visualize : public WindowGFX {
     private:
-        float _scale, _max[AXIS_MAX];
+        float _scale, _max[AXIS_MAX], _origin[AXIS_MAX];
 
         uint16_t _color[VC_MAX];
 
@@ -62,8 +62,11 @@ class Visualize : public WindowGFX {
 
         void clear()
         {
-            float zero[AXIS_MAX] = {};
+            float zero[AXIS_MAX] = {}, old_origin[AXIS_MAX];
             fillScreen(_color[VC_BACKGROUND]);
+
+            memcpy(old_origin, _origin, sizeof(_origin));
+            memcpy(_origin, zero, sizeof(_origin));
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 float pos[AXIS_MAX] = {};
@@ -82,6 +85,8 @@ class Visualize : public WindowGFX {
             line_to(VC_AXIS + AXIS_Y, _max[AXIS_X], _max[AXIS_Y], 0);
             cursor_to(0, 0, _max[AXIS_Z]);
             line_to(VC_AXIS + AXIS_X, _max[AXIS_X], 0, _max[AXIS_Z]);
+
+            memcpy(_origin, old_origin, sizeof(_origin));
         }
 
         void clear(float scale)
@@ -101,6 +106,15 @@ class Visualize : public WindowGFX {
             _max[AXIS_Z] = z_mm;
 
             clear(scale_x > scale_y ? scale_y : scale_x);
+        }
+
+        void origin(float x, float y, float z)
+        {
+            _origin[AXIS_X] = x;
+            _origin[AXIS_Y] = y;
+            _origin[AXIS_Z] = z;
+
+            clear();
         }
 
         void color_set(int color_ndx, uint16_t color)
@@ -141,8 +155,11 @@ class Visualize : public WindowGFX {
     private:
         void _flatten(const float *pos, struct point *pt)
         {
-            pt->x = (pos[AXIS_X] + pos[AXIS_Y]/4.0) * _scale + 1;
-            pt->y = (height() - 1) - (pos[AXIS_Z] + pos[AXIS_Y]/4) * _scale - 1;
+            pt->x = ((pos[AXIS_X] - _origin[AXIS_X]) +
+                     (pos[AXIS_Y] - _origin[AXIS_Y])/4.0) * _scale + 1;
+            pt->y = (height() - 1) -
+                    ((pos[AXIS_Z] - _origin[AXIS_Z]) +
+                     (pos[AXIS_Y] - _origin[AXIS_Y])/4) * _scale - 1;
         }
 
         void _pixel2d_clipped(uint16_t color, const struct point *pt);
