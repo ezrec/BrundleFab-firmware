@@ -75,6 +75,8 @@ FUSER(toolFuser);
 Tool toolFuser;
 #endif
 
+Tool toolRecoat;
+
 ToolHead tools;
 CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
 
@@ -106,6 +108,7 @@ void setup()
     tools.attach(TOOL_INK_BLACK, &toolInk_Black);
 #endif
     tools.attach(TOOL_FUSER, &toolFuser);
+    tools.attach(TOOL_RECOAT, &toolRecoat);
     toolFuser.begin();
     tools.begin();
 
