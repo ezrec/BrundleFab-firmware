@@ -29,13 +29,15 @@ class ToolInk : public Tool {
         uint16_t _pattern;
         uint32_t _pulse_per_minute;
     public:
-        virtual void parm(enum parm_e p, float val = 0.0)
+        virtual void parm_set(enum parm_e p, float val = 0.0)
         {
             switch (p) {
             case PARM_P: _pattern = (uint16_t)val; break;
             case PARM_S: _pulse_per_minute = (uint32_t)val; break;
             default: break;
             }
+
+            Tool::parm_set(p, val);
         }
 
         virtual void update(void);

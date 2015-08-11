@@ -371,13 +371,13 @@ void GCode::_block_do(struct gcode_block *blk)
         }
 
         if (blk->update_mask & GCODE_UPDATE_P)
-            th->parm(Tool::PARM_P, blk->p);
+            th->parm_set(Tool::PARM_P, blk->p);
         if (blk->update_mask & GCODE_UPDATE_Q)
-            th->parm(Tool::PARM_Q, blk->q);
+            th->parm_set(Tool::PARM_Q, blk->q);
         if (blk->update_mask & GCODE_UPDATE_R)
-            th->parm(Tool::PARM_R, blk->r);
+            th->parm_set(Tool::PARM_R, blk->r);
         if (blk->update_mask & GCODE_UPDATE_S)
-            th->parm(Tool::PARM_S, blk->s);
+            th->parm_set(Tool::PARM_S, blk->s);
 
         if (tool_change)
             th->start();

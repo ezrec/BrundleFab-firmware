@@ -109,9 +109,15 @@ class ToolHead : Tool {
             return _tool->update();
         }
 
-        virtual void parm(enum parm_e p, float val = 0.0)
+        virtual void parm_set(enum parm_e p, float val = 0.0)
         {
-            _tool->parm(p, val);
+            _tool->parm_set(p, val);
+        }
+
+        virtual float parm_get(enum parm_e p)
+        {
+            return _tool->parm_get(p);
+        }
         }
 };
 

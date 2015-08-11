@@ -15,18 +15,19 @@
  *
  */
 
-#ifndef H
-#define H
+#ifndef TOOL_H
+#define TOOL_H
 
 class Tool {
     private:
         bool _active;
+        float _parm[4];
     public:
         enum parm_e {
-            PARM_P,
-            PARM_Q,
-            PARM_R,
-            PARM_S,
+            PARM_P = 0,
+            PARM_Q = 1,
+            PARM_R = 2,
+            PARM_S = 3,
         };
         Tool()
         {
@@ -55,10 +56,16 @@ class Tool {
             return _active;
         }
 
-        virtual void parm(enum parm_e p, float val = 0.0)
+        virtual void parm_set(enum parm_e p, float val = 0.0)
         {
+            _parm[(int)p] = val;
+        }
+
+        virtual float parm_get(enum parm_e p)
+        {
+            return _parm[(int)p];
         }
 };
 
-#endif /* H */
+#endif /* TOOL_H */
 /* vim: set shiftwidth=4 expandtab:  */

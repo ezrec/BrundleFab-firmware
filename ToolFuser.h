@@ -91,7 +91,7 @@ class ToolFuser : public Tool {
             Tool::stop();
         }
 
-        virtual void parm(enum parm_e p, float val = 0.0)
+        virtual void parm_set(enum parm_e p, float val = 0.0)
         {
             switch (p) {
             case PARM_P:
