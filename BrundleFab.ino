@@ -54,6 +54,7 @@ Axis axisX;
 Y_MOTOR(axisY);
 #else
 Axis axisY;
+Tool toolInk_Black;
 #endif
 
 #if ENABLE_AXIS_Z
@@ -67,8 +68,6 @@ E_MOTOR(axisE);
 #else
 Axis axisE;
 #endif
-
-Tool toolInk_Black;
 
 #if ENABLE_TOOL_FUSER
 FUSER(toolFuser);
@@ -101,7 +100,11 @@ void setup()
     SD.begin(SD_CS);
 #endif
 
+#if ENABLE_AXIS_Y
     tools.attach(TOOL_INK_BLACK, (Tool *)&axisY);
+#else
+    tools.attach(TOOL_INK_BLACK, &toolInk_Black);
+#endif
     tools.attach(TOOL_FUSER, &toolFuser);
     toolFuser.begin();
     tools.begin();
