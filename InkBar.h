@@ -76,7 +76,7 @@ class InkBar : public Tool, public Axis {
             Tool::stop();
         }
 
-        void parm(enum parm_e p, float val)
+        virtual void parm_set(enum parm_e p, float val)
         {
             switch (p) {
             case Tool::PARM_P:

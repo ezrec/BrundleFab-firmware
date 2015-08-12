@@ -41,6 +41,7 @@ class CNC {
         char _status[CNC_STATUS_MAX];
         char _message[CNC_MESSAGE_MAX];
         bool _message_updated;
+        float _pos[AXIS_MAX];
 
         Stream *_serial[4];
 
@@ -81,21 +82,23 @@ class CNC {
 
         void target_move(float *pos, uint8_t axis_mask, unsigned long ms = 0)
         {
-            /* Relative moves do not need to have the tool offset applied
-             */
+            const float *offset = tool()->offset_is();
+
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i))
-                    _axis[i]->target_move(pos[i], ms);
+                    _pos[i] += pos[i];
+                _axis[i]->target_set(_pos[i] - offset[i], ms);
             }
         }
 
         void target_set(float *pos, uint8_t axis_mask, unsigned long ms = 0)
         {
-            const float *offset = _toolhead->offset_is();
+            const float *offset = tool()->offset_is();
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i))
-                    _axis[i]->target_set(pos[i] + offset[i], ms);
+                    _pos[i] = pos[i];
+                _axis[i]->target_set(_pos[i] - offset[i], ms);
             }
         }
 
@@ -119,7 +122,7 @@ class CNC {
 
             for (int i = 0; i < AXIS_MAX; i++) {
                 if (axis_mask & (1 << i)) {
-                    float delta = pos[i] - _axis[i]->target_get();
+                    float delta = pos[i] - _pos[i];
                     dist += delta * delta;
                 }
             }
@@ -131,10 +134,10 @@ class CNC {
 
         void target_get(float *pos)
         {
-            const float *offset = _toolhead->offset_is();
+            const float *offset = tool()->offset_is();
 
             for (int i = 0; i < AXIS_MAX; i++)
-                pos[i] = _axis[i]->target_get() - offset[i];
+                pos[i] = _pos[i] + offset[i];
         }
 
 #if ENABLE_SD
@@ -194,6 +197,11 @@ class CNC {
             return _toolhead;
         }
 
+        Tool *tool(int tool_id = -1)
+        {
+            return _toolhead->tool(tool_id);
+        }
+
         void motor_enable(bool enabled = true)
         {
             for (int i = 0; i < AXIS_MAX; i++)
@@ -208,7 +216,7 @@ class CNC {
         void stop()
         {
             motor_disable();
-            _toolhead->stop();
+            _toolhead->tool()->stop();
         }
 
         void status_set(const char *message)
@@ -278,9 +286,16 @@ class CNC {
                 _switch_mask &= ~mask;
         }
 
-        bool tool_offset_set(int tool, float *pos, uint8_t axis_mask)
+        bool tool_offset_set(int tool_id, float *pos, uint8_t axis_mask)
         {
-            return _toolhead->offset_set(tool, pos, axis_mask);
+            Tool *t = tool(tool_id);
+
+            if (!t)
+                return false;
+
+            t->offset_set(pos, axis_mask);
+
+            return true;
         }
 
         bool update(unsigned long us_now)
@@ -291,7 +306,7 @@ class CNC {
                 motion |= _axis[i]->update(us_now);
 
             if (motion)
-                _toolhead->update(us_now);
+                tool()->update(us_now);
 
             return motion;
         }

@@ -28,13 +28,11 @@ class ToolHead : Tool {
     private:
         int _id;
         Tool *_tool;            /* Current tool */
-        const float *_offset;   /* Current offset */
 
         int _tools;
         struct {
             int id;
             Tool *tool;
-            float offset[AXIS_MAX];
         } _map[MAX_TOOLS];
 
         Tool _tool_null;
@@ -73,13 +71,26 @@ class ToolHead : Tool {
             select(0);
         }
 
+        virtual Tool *tool(int tool = -1)
+        {
+            if (tool < 0)
+                return _tool;
+
+            for (int i = 0; i < _tools; i++) {
+                if (_map[i].id == tool) {
+                    return _map[i].tool;
+                }
+            }
+
+            return NULL;
+        }
+
         virtual bool select(int tool)
         {
             for (int i = 0; i < _tools; i++) {
                 if (_map[i].id == tool) {
                     _id = _map[i].id;
                     _tool = _map[i].tool;
-                    _offset = &_map[i].offset[0];
                     return true;
                 }
             }
@@ -90,56 +101,6 @@ class ToolHead : Tool {
         virtual int selected()
         {
             return _id;
-        }
-
-        virtual void start(void)
-        {
-            _tool->start();
-        }
-
-        virtual void stop(void)
-        {
-            _tool->stop();
-        }
-
-        virtual bool active(void)
-        {
-            return _tool->active();
-        }
-
-        virtual bool update(unsigned long us_now)
-        {
-            return _tool->update(us_now);
-        }
-
-        virtual void parm_set(enum parm_e p, float val = 0.0)
-        {
-            _tool->parm_set(p, val);
-        }
-
-        virtual float parm_get(enum parm_e p)
-        {
-            return _tool->parm_get(p);
-        }
-
-        virtual bool offset_set(int tool, float *pos, uint8_t axis_mask)
-        {
-            for (int i = 0; i < _tools; i++) {
-                if (_map[i].id == tool) {
-                    for (int j = 0; j < AXIS_MAX; j++) {
-                        if ((1 << j) && axis_mask)
-                            _map[i].offset[j] = pos[j];
-                    }
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        virtual const float *offset_is()
-        {
-            return _offset;
         }
 };
 

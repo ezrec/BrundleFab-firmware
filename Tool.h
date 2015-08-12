@@ -18,10 +18,13 @@
 #ifndef TOOL_H
 #define TOOL_H
 
+#include "Axis.h"
+
 class Tool {
     private:
         bool _active;
         float _parm[4];
+        float _offset[AXIS_MAX];
     public:
         enum parm_e {
             PARM_P = 0,
@@ -64,6 +67,19 @@ class Tool {
         virtual float parm_get(enum parm_e p)
         {
             return _parm[(int)p];
+        }
+
+        virtual void offset_set(float *pos, uint8_t axis_mask)
+        {
+            for (int j = 0; j < AXIS_MAX; j++) {
+                if ((1 << j) && axis_mask)
+                    _offset[j] = pos[j];
+            }
+        }
+
+        virtual const float *offset_is()
+        {
+            return _offset;
         }
 };
 

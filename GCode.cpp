@@ -371,21 +371,21 @@ void GCode::_block_do(struct gcode_block *blk)
         tool_change = th->selected() != blk->cmd;
 
         if (tool_change) {
-            th->stop();
+            th->tool()->stop();
             th->select(blk->cmd);
         }
 
         if (blk->update_mask & GCODE_UPDATE_P)
-            th->parm_set(Tool::PARM_P, blk->p);
+            th->tool()->parm_set(Tool::PARM_P, blk->p);
         if (blk->update_mask & GCODE_UPDATE_Q)
-            th->parm_set(Tool::PARM_Q, blk->q);
+            th->tool()->parm_set(Tool::PARM_Q, blk->q);
         if (blk->update_mask & GCODE_UPDATE_R)
-            th->parm_set(Tool::PARM_R, blk->r);
+            th->tool()->parm_set(Tool::PARM_R, blk->r);
         if (blk->update_mask & GCODE_UPDATE_S)
-            th->parm_set(Tool::PARM_S, blk->s);
+            th->tool()->parm_set(Tool::PARM_S, blk->s);
 
         if (tool_change)
-            th->start();
+            th->tool()->start();
 
         break;
     case 'G':
@@ -446,7 +446,7 @@ void GCode::_block_do(struct gcode_block *blk)
 
                 /* Brundlefab pattern render hack */
                 if (color == VC_TOOL) {
-                    uint16_t pat = _cnc->toolhead()->parm_get(Tool::PARM_P);
+                    uint16_t pat = _cnc->tool()->parm_get(Tool::PARM_P);
                     int on = 0;
                     for (int i = 0; i < 12; i++) {
                         if ((1 << i) & pat)
