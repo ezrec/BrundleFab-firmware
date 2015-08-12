@@ -123,8 +123,11 @@ class MenuAxis : public Menu {
             if (key == UI_KEY_SELECT) {
                 if (menu_axis_incr[_incr] == 0)
                     ui->cnc()->axis(_axis)->home();
-                else
-                    ui->cnc()->axis(_axis)->target_move(menu_axis_incr[_incr]);
+                else {
+                    float pos = ui->cnc()->axis(_axis)->target_get();
+                    pos += menu_axis_incr[_incr];
+                    ui->cnc()->axis(_axis)->target_set(pos);
+                }
             }
 
             ui->setTextWrap(false);

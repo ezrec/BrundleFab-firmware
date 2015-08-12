@@ -156,11 +156,6 @@ class Axis {
             _updated = false;
         }
 
-        void target_move(float mm, unsigned long ms = 0)
-        {
-            target_set(target_get() + mm, ms);
-        }
-
         virtual float target_get(unsigned long *ms_left = NULL)
         {
             unsigned long now = millis();
