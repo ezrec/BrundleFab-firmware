@@ -628,7 +628,14 @@ void GCode::_block_do(struct gcode_block *blk)
         case 115: /* M115 - Get firmware version */
             out->print(" FIRMWARE_NAME:BrundleFab");
             break;
-        case 117:
+        case 116: /* M116 - Wait for tool temp */
+            if (blk->update_mask & GCODE_UPDATE_P) {
+                int tool = (int)blk->p;
+                while (!_cnc->tool(tool)->ready());
+            } else {
+                while (!_cnc->tool()->ready());
+            }
+        case 117: /* M117 - Display string */
             out->print(" ");
             out->print(blk->string);
             _cnc->status_set(blk->string);

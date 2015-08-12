@@ -49,6 +49,11 @@ class Tool {
              _active = false;
         }
 
+        virtual bool ready(void)
+        {
+            return active();
+        }
+
         virtual bool active(void)
         {
             return _active;

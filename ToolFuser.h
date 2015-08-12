@@ -61,6 +61,8 @@ class ToolFuser : public Tool {
         int _temp_pin;
         short _limit_min;
         short _limit_max;
+        short _precision;
+        bool _ready;
 
     public:
         ToolFuser(int enable_pin, int temp_pin)
@@ -69,6 +71,8 @@ class ToolFuser : public Tool {
             _temp_pin = temp_pin;
             _limit_min = 170;
             _limit_max = 180;
+            _precision = 3;
+            _ready = false;
         }
 
         virtual void begin()
@@ -97,18 +101,24 @@ class ToolFuser : public Tool {
             case PARM_P:
                 _limit_max = (short)val;
                 if (_limit_max < _limit_min)
-                    _limit_min = _limit_max - 5;
+                    _limit_min = _limit_max - _precision;
                 break;
             case PARM_Q:
                 _limit_min = (short)val;
                 if (_limit_min > _limit_max)
-                    _limit_max = _limit_min + 5;
+                    _limit_max = _limit_min + _precision;
                 break;
             case PARM_R:
                 break;
             case PARM_S:
                 break;
             }
+        }
+
+        virtual bool ready(void)
+        {
+            update(micros());
+            return _ready;
         }
 
         virtual bool update(unsigned long us_now)
@@ -136,10 +146,16 @@ if (DEBUG) {
 
             if (temp > _limit_max) {
                 digitalWrite(_enable_pin, LOW);
+                _ready = false;
+            } else if (temp < _limit_min) {
+                digitalWrite(_enable_pin, HIGH);
             }
 
-            if (temp < _limit_min) {
-                digitalWrite(_enable_pin, HIGH);
+            if ((_limit_min - _precision) <= temp &&
+                temp <= (_limit_max + _precision)) {
+                _ready = true;
+            } else {
+                _ready = false;
             }
 
             return Tool::update(us_now);
