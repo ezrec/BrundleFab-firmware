@@ -168,11 +168,12 @@ static enum ui_key keymap(int joy)
 
 void loop()
 {
+    unsigned long us_now = micros();
 #if ENABLE_UI
     enum ui_key key;
     bool cnc_active, ui_active;
 
-    cnc_active = cnc.update();
+    cnc_active = cnc.update(us_now);
 
     if (!cnc_active) {
         key = keymap(joy.read());
@@ -185,7 +186,7 @@ void loop()
     if (!ui_active)
         gcode.update(cnc_active);
 #else
-    gcode.update(cnc.update());
+    gcode.update(cnc.update(us_now));
 #endif
 }
 

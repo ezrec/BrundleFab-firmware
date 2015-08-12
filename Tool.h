@@ -51,7 +51,7 @@ class Tool {
             return _active;
         }
 
-        virtual bool update()
+        virtual bool update(unsigned long us_now)
         {
             return _active;
         }

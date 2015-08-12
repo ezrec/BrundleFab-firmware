@@ -107,9 +107,9 @@ class ToolHead : Tool {
             return _tool->active();
         }
 
-        virtual bool update()
+        virtual bool update(unsigned long us_now)
         {
-            return _tool->update();
+            return _tool->update(us_now);
         }
 
         virtual void parm_set(enum parm_e p, float val = 0.0)

@@ -283,15 +283,15 @@ class CNC {
             return _toolhead->offset_set(tool, pos, axis_mask);
         }
 
-        bool update()
+        bool update(unsigned long us_now)
         {
             bool motion = false;
 
             for (int i = 0; i < AXIS_MAX; i++)
-                motion |= _axis[i]->update();
+                motion |= _axis[i]->update(us_now);
 
             if (motion)
-                _toolhead->update();
+                _toolhead->update(us_now);
 
             return motion;
         }

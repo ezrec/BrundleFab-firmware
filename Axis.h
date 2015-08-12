@@ -113,7 +113,7 @@ class Axis {
             target_set(mm);
         }
 
-        virtual bool update()
+        virtual bool update(unsigned long ms_now)
         {
             if (!_updated) {
                 _updated = true;

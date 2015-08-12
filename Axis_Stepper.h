@@ -127,7 +127,7 @@ class Axis_Stepper : public Axis {
             _udelay.per_step = 60000000UL / _target.velocity /  _usteps_per_mm;
         }
 
-        virtual bool update()
+        virtual bool update(unsigned long us_now)
         {
             int32_t pos = _position;
             int32_t tar = _target_position;
@@ -141,7 +141,7 @@ class Axis_Stepper : public Axis {
                     tar = _minPos;
 
                 if (tar != pos) {
-                    _udelay.last = micros();
+                    _udelay.last = us_now;
                     _udelay.this_step = 0;
                     _mode = MOVING;
                 }
@@ -152,26 +152,26 @@ class Axis_Stepper : public Axis {
                     break;
                 }
                 if (endstop(_homing.pin)) {
-                    _homing.timeout = millis()+1;
+                    _homing.timeout = us_now+1000;
                     _mode = HOMING_QUIESCE;
                 } else {
                     _step(_homing.steps);
                 }
                 break;
             case HOMING_QUIESCE:
-                if (millis() >= _homing.timeout) {
+                if (us_now >= _homing.timeout) {
                     _mode = HOMING_BACKOFF;
-                    _homing.timeout = millis()+10;
+                    _homing.timeout = us_now+10000;
                     _mode = HOMING_BACKOFF;
                 }
                 break;
             case HOMING_BACKOFF:
-                if (millis() >= _homing.timeout) {
+                if (us_now >= _homing.timeout) {
                     if (endstop(_homing.pin)) {
                         /* If we are still on the endstop, back slowly */
                         if (!_step(_homing.steps > 0 ? -1 : 1))
                             break;
-                        _homing.timeout = millis()+10;
+                        _homing.timeout = us_now+10000;
                     } else {
                         _position = _homing.position;
                         _mode = IDLE;

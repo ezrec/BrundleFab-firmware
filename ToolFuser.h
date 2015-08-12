@@ -111,7 +111,7 @@ class ToolFuser : public Tool {
             }
         }
 
-        virtual bool update(void)
+        virtual bool update(unsigned long us_now)
         {
             /* Overheat protection */
             short adc = analogRead(_temp_pin);
@@ -142,7 +142,7 @@ if (DEBUG) {
                 digitalWrite(_enable_pin, HIGH);
             }
 
-            return Tool::update();
+            return Tool::update(us_now);
         }
 };
 
