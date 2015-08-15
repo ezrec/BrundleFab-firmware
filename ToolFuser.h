@@ -138,12 +138,6 @@ class ToolFuser : public Tool {
                 }
             }
 
-if (DEBUG) {
-    Serial.print(adc);Serial.print("A: ");
-    Serial.print(temp);Serial.print("C, ");
-    Serial.print(temp*9/5+32);Serial.println("F");
-}
-
             if (temp > _limit_max) {
                 digitalWrite(_enable_pin, LOW);
                 _ready = false;
@@ -157,6 +151,16 @@ if (DEBUG) {
             } else {
                 _ready = false;
             }
+
+if (DEBUG) {
+    Serial.print(adc);Serial.print("A: ");
+    Serial.print(temp);Serial.print("C, (");
+    Serial.print(_limit_min);Serial.print("-");
+    Serial.print(_limit_max);Serial.print(") ");
+    Serial.print(temp*9/5+32);Serial.print("F");
+    if (_ready) Serial.print("R");
+    Serial.print("\r");
+}
 
             return Tool::update(us_now);
         }
