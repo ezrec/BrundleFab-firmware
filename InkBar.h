@@ -108,6 +108,11 @@ if (DEBUG) {
                 _next_status = us_now + 100L * 1000;
             }
 
+if (DEBUG) {
+    if (motor_timeout)
+        Serial.print(" **TIMEOUT**");
+}
+
             switch (_state) {
             case STATE_IDLE:
                     break;
@@ -142,7 +147,8 @@ if (DEBUG) {
 
 if (DEBUG && in_state != _state) {
     Serial.print("MODE: ");Serial.print(in_state);
-    Serial.print(" => ");Serial.println(_state);
+    Serial.print(" => ");Serial.print(_state);
+    Serial.println();
 }
 
             if (!_ink.busy() && (us_now > _next_status)) {
@@ -210,7 +216,7 @@ private:
 
             _state = STATE_INK_FORWARD;
             _ink.send('i');
-            _next_motor = us_now + _sprays * _dotline * 1000;
+            _next_motor = us_now + _sprays * _dotline_max * 1000L;
 if (DEBUG) Serial.println("MODE: 0 => 2");
         }
 
@@ -221,7 +227,7 @@ if (DEBUG) Serial.println("MODE: 0 => 2");
 
             _state = STATE_INK_REVERSE;
             _ink.send('j');
-            _next_motor = us_now + (_sprays + 1) * _dotline * 1000;
+            _next_motor = us_now + _sprays * _dotline_max * 1000L;
 if (DEBUG) Serial.println("MODE: 0 => 3");
         }
 
