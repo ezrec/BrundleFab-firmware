@@ -85,7 +85,7 @@ if (DEBUG) {
                 _pattern = (uint16_t)val;
                 break;
             case Tool::PARM_S:
-                _sprays = (val < 2) ? 2 : val;
+                _sprays = (val < 1) ? 1 : val;
 if (DEBUG) {
     Serial.print("parm: Spray ");Serial.println(_sprays);
 }
