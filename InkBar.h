@@ -62,7 +62,6 @@ class InkBar : public Tool, public Axis {
         {
             _ink.begin();
             _next_status = micros() + 100000;
-            _ink.cmd('s', _sprays-1);
             home();
         }
 
