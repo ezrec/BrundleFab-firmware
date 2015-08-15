@@ -29,6 +29,7 @@ clean:
 
 CXXFLAGS = -g3 -I. -Isimavr -I/usr/include/SDL \
 	   -Wall -Werror \
+	   -Ilibraries/BrundleInk \
 	   -DSHIELD_brundle -D__SIMAVR__
 
 SRCS := $(wildcard simavr/*.cpp) \
