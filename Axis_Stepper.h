@@ -91,9 +91,9 @@ class Axis_Stepper : public Axis {
          */
         virtual int step(int32_t steps) = 0;
 
-        virtual void home(float mm)
+        virtual void home()
         {
-            Axis::home(mm);
+            Axis::home();
 
             _mode = HOMING;
         }

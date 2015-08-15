@@ -109,9 +109,9 @@ class Axis_DCEncoder : public Axis {
             Axis::begin();
         }
 
-        virtual void home(int32_t pos)
+        virtual void home()
         {
-            _homing.target = pos;
+            _homing.target = 0;
 
             if (_homing.pin == Axis::STOP_NONE)
                 _mode = HOMING_STALL;

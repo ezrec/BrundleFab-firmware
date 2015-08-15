@@ -39,6 +39,7 @@ static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
 {
     uint16_t bg, fg, st;
     float pos[AXIS_MAX];
+    CNC *cnc = ui->cnc();
 
     bg = ui->color(UI_COLOR_BACKGROUND);
     fg = ui->color(UI_COLOR_TEXT);
@@ -51,15 +52,15 @@ static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
     ui->print(tool);
     ui->print("  ");
 
+    cnc->position_get(pos);
+
     for (int i = 0; i < AXIS_MAX; i++) {
-        Axis *axis = ui->cnc()->axis(i);
         bool selected = sel_axis == i;
-        pos[i] = axis->position_get();
         ui->setTextCursor(col + 1 + (1 + 1 + 1 + 3 + 1 + 2 + 1) * (i >> 1), row + 1 + (i & 1));
         ui->setTextColor(selected ? st : fg, bg);
         ui->print("XYZE"[i]); ui->print(":");
         if (sel_axis < 0)
-            ui->setTextColor(axis->motor_active() ? st : fg, bg);
+            ui->setTextColor(cnc->axis_active(i) ? st : fg, bg);
         else
             ui->setTextColor(selected ? bg : fg, selected ? fg : bg);
 
@@ -121,12 +122,14 @@ class MenuAxis : public Menu {
             }
 
             if (key == UI_KEY_SELECT) {
-                if (menu_axis_incr[_incr] == 0)
-                    ui->cnc()->axis(_axis)->home();
-                else {
-                    float pos = ui->cnc()->axis(_axis)->target_get();
-                    pos += menu_axis_incr[_incr];
-                    ui->cnc()->axis(_axis)->target_set(pos);
+                if (menu_axis_incr[_incr] == 0) {
+                    ui->cnc()->home(1 << _axis);
+                } else {
+                    float pos[AXIS_MAX];
+
+                    ui->cnc()->target_get(pos);
+                    pos[_axis] += menu_axis_incr[_incr];
+                    ui->cnc()->target_set(pos, (1 << _axis));
                 }
             }
 

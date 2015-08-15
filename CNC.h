@@ -132,6 +132,14 @@ class CNC {
             target_set(pos, axis_mask, ms);
         }
 
+        void home(uint8_t axis_mask = 0xff)
+        {
+            for (int i = 0; i < AXIS_MAX; i++) {
+                if (axis_mask & (1 << i))
+                    _axis[i]->home();
+            }
+        }
+
         void target_get(float *pos)
         {
             const float *offset = tool()->offset_is();
@@ -139,6 +147,15 @@ class CNC {
             for (int i = 0; i < AXIS_MAX; i++)
                 pos[i] = _pos[i] + offset[i];
         }
+
+        void position_get(float *pos)
+        {
+            const float *offset = tool()->offset_is();
+
+            for (int i = 0; i < AXIS_MAX; i++)
+                pos[i] = _axis[i]->position_get() + offset[i];
+        }
+
 
 #if ENABLE_SD
         void begin(const char *filename)
@@ -187,11 +204,6 @@ class CNC {
         }
 #endif
 
-        Axis *axis(int n)
-        {
-            return _axis[n];
-        }
-
         ToolHead *toolhead()
         {
             return _toolhead;
@@ -202,20 +214,45 @@ class CNC {
             return _toolhead->tool(tool_id);
         }
 
-        void motor_enable(bool enabled = true)
+        bool axis_active(int axis = -1)
         {
-            for (int i = 0; i < AXIS_MAX; i++)
-                _axis[i]->motor_enable(enabled);
+            bool active = false;
+
+            if (axis < 0) {
+                for (int i = 0; i < AXIS_MAX; i++)
+                    active |= _axis[i]->motor_active();
+            } else {
+                active = _axis[axis]->motor_active();
+            }
+
+            return active;
         }
 
-        void motor_disable()
+        bool axis_endstop(int axis, enum Axis::axis_stop_e stop, bool *is_phys = NULL)
         {
-            motor_enable(false);
+            return _axis[axis]->endstop(stop, is_phys);
+        }
+
+        void axis_motor(bool enabled, uint8_t axis_mask = 0xff)
+        {
+            for (int i = 0; i < AXIS_MAX; i++)
+                if ((1 << i) && axis_mask)
+                    _axis[i]->motor_enable(enabled);
+        }
+
+        void axis_enable(uint8_t axis_mask = 0xff)
+        {
+            axis_motor(true, axis_mask);
+        }
+
+        void axis_disable(uint8_t axis_mask = 0xff)
+        {
+            axis_motor(false, axis_mask);
         }
 
         void stop()
         {
-            motor_disable();
+            axis_disable();
             _toolhead->tool()->stop();
         }
 

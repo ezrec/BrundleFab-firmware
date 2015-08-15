@@ -108,8 +108,14 @@ class Axis {
             return false;
         }
 
-        virtual void home(float mm = 0.0)
+        virtual void home()
         {
+            /* Recalibrate position - may or may not move axis */
+        }
+
+        void home(float mm)
+        {
+            home();
             target_set(mm);
         }
 

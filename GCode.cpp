@@ -491,22 +491,16 @@ void GCode::_block_do(struct gcode_block *blk)
             _units_to_mm = 1.0;
             break;
         case 28: /* G28 - Re-home */
+            _cnc->home(blk->update_mask);
+            _cnc->target_set(blk->axis, blk->update_mask);
 #if ENABLE_UI
             if (_vis) {
                 float pos[AXIS_MAX];
-                for (int i = 0; i < AXIS_MAX; i++) {
-                    if (blk->update_mask & GCODE_UPDATE_AXIS(i))
-                        pos[i] = blk->axis[i];
-                    else
-                        pos[i] = _cnc->axis(i)->target_get();
-                }
+
+                _cnc->target_get(pos);
                 _vis->cursor_to(pos);
             }
 #endif
-            for (int i = 0; i < AXIS_MAX; i++) {
-                if (blk->update_mask & GCODE_UPDATE_AXIS(i))
-                    _cnc->axis(i)->home(blk->axis[i]);
-            }
             break;
         case 90: /* G90 - Set to absolute positioning */
             _positioning = ABSOLUTE;
@@ -515,9 +509,14 @@ void GCode::_block_do(struct gcode_block *blk)
             _positioning = RELATIVE;
             break;
         case 92: /* G92 - Set position */
-            for (int i = 0; i < AXIS_MAX; i++) {
-                if (blk->update_mask & GCODE_UPDATE_AXIS(i))
-                    _offset[i] = (_cnc->axis(i)->position_get() + blk->axis[i]);
+            {
+                float pos[AXIS_MAX];
+
+                _cnc->position_get(pos);
+                for (int i = 0; i < AXIS_MAX; i++) {
+                    if (blk->update_mask & GCODE_UPDATE_AXIS(i))
+                        _offset[i] = pos[i] + blk->axis[i];
+                }
             }
         default:
             break;
@@ -532,10 +531,10 @@ void GCode::_block_do(struct gcode_block *blk)
             _pause(blk->io, true);
             break;
         case 17: /* M17 - Enable motors */
-            _cnc->motor_enable();
+            _cnc->axis_enable();
             break;
         case 18: /* M18 - Disable motors */
-            _cnc->motor_disable();
+            _cnc->axis_disable();
             break;
 #if ENABLE_SD
         case 20: /* M20 - List SD files */
@@ -612,18 +611,18 @@ void GCode::_block_do(struct gcode_block *blk)
             }
             break;
         case 114: /* M114 - Get current position */
-            out->print(" C: X:");
-            out->print((float)_cnc->axis(AXIS_X)->position_get()/
-                                  _units_to_mm);
-            out->print(" Y:");
-            out->print((float)_cnc->axis(AXIS_Y)->position_get()/
-                                  _units_to_mm);
-            out->print(" Z:");
-            out->print((float)_cnc->axis(AXIS_Z)->position_get()/
-                                  _units_to_mm);
-            out->print(" E:");
-            out->print((float)_cnc->axis(AXIS_E)->position_get()/
-                                  _units_to_mm);
+            {
+                float pos[AXIS_MAX];
+
+                _cnc->position_get(pos);
+                for (int i = 0; i < AXIS_MAX; i++)
+                    pos[i] /= _units_to_mm;
+
+                out->print(" C: X:"); out->print(pos[AXIS_X]);
+                out->print(" Y:"); out->print(pos[AXIS_Y]);
+                out->print(" Z:"); out->print(pos[AXIS_Z]);
+                out->print(" E:"); out->print(pos[AXIS_E]);
+            }
             break;
         case 115: /* M115 - Get firmware version */
             out->print(" FIRMWARE_NAME:BrundleFab");
@@ -643,12 +642,12 @@ void GCode::_block_do(struct gcode_block *blk)
         case 119: /* M119 - Report endstop status */
             for (int i = 0; i < AXIS_MAX; i++) {
                 bool state, exists;
-                state = _cnc->axis(i)->endstop(Axis::STOP_MIN, &exists);
+                state = _cnc->axis_endstop(i, Axis::STOP_MIN, &exists);
                 if (exists) {
                     out->print(" ");out->print("xyze"[i]);
                     out->print("_min:");out->print(state ? "TRIGGERED" : "open");
                 }
-                state = _cnc->axis(i)->endstop(Axis::STOP_MAX, &exists);
+                state = _cnc->axis_endstop(i, Axis::STOP_MAX, &exists);
                 if (exists) {
                     out->print(" ");out->print("xyze"[i]);
                     out->print("_max:");out->print(state ? "TRIGGERED" : "open");
@@ -770,7 +769,7 @@ void GCode::_process_block(struct gcode_block *blk)
 {
     /* Special case: M112 Emergency stop */
     if (blk->code == 'M' && blk->cmd == 112) {
-        _cnc->motor_disable();
+        _cnc->stop();
         _halted = true;
         return;
     }
