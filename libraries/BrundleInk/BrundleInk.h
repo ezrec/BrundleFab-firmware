@@ -35,12 +35,13 @@ class BrundleInk {
         static const int DEBUG = 0;
         static const int TIMEOUT_MS = 2000;
         HardwareSerial *_io;
+        uint16_t _line_no;
 
         struct {
             uint8_t state;
             uint8_t sprays;
             uint16_t space;
-            uint8_t temp;
+            uint16_t line;
             uint16_t position;
         } _status;
 
@@ -61,7 +62,7 @@ class BrundleInk {
 
         void begin()
         {
-            bool done = false;
+            uint16_t line_no = millis() & 0xfff;
 
             _io->begin(115200);
 
@@ -71,17 +72,11 @@ if (DEBUG) {
             /* Attempt to communicate with the device */
             do {
                 unsigned long timeout = millis() + 100;
-                send('?');
+
+                line_no = (line_no + 1) & 0xfff;
+                send('n',line_no);
                 while (!recv() && (millis() < timeout));
-                if (!busy()) {
-                    timeout = millis() + 100;
-                    while (millis() < timeout) {
-                        _response.waiting = true;
-                        recv();
-                    }
-                    done = true;
-                }
-            } while (!done);
+            } while (_status.line != line_no);
 
             _response.waiting = false;
 if (DEBUG) {
@@ -104,12 +99,20 @@ if (DEBUG) {
     Serial.println(val, HEX);
 }
 
+if (DEBUG && motor_on() && cmd != '?') {
+    Serial.println("**** OH NO! THE MOTOR IS ON! ****");
+    for (;;);
+}
+
             if (_response.waiting) {
 if (DEBUG) {
     Serial.println(">> SEQUENCE ERROR: _send");
 }
                 return false;
             }
+
+            if (cmd == 'n')
+                _line_no = val;
 
             _io->print(cmd);
             _io->println(val, HEX);
@@ -126,15 +129,6 @@ if (DEBUG) {
             if (!_response.waiting)
                 return false;
 
-            if (millis() > _response.resend) {
-if (DEBUG) {
-    Serial.print("RESEND: ");
-}
-
-                _response.waiting = false;
-                send(_response.cmd, _response.val);
-            }
-
             return true;
         }
 
@@ -147,8 +141,17 @@ if (DEBUG) {
                 return false;
             }
 
-            if (!_io->available())
+            if (!_io->available()) {
+                if (millis() > _response.resend) {
+if (DEBUG) {
+    Serial.print("RESEND: ");
+}
+                    _response.waiting = false;
+                    send(_response.cmd, _response.val);
+                }
+
                 return false;
+            }
 
             char c = _io->read();
 if (DEBUG > 1) {
@@ -165,7 +168,7 @@ if (DEBUG > 1) {
                 return false;
             }
 
-            unsigned s, i, n, t, p;
+            unsigned s, i, n, l, p;
             _response.buff[_response.pos] = 0;
             int rc;
 
@@ -179,30 +182,33 @@ if (DEBUG) {
 }
             }
 
-            rc = sscanf(_response.buff, "ok %x %x %x %x %x", &s, &i, &n, &t, &p);
+            rc = sscanf(_response.buff, "ok %x %x %x %x %x", &s, &i, &n, &l, &p);
             _response.pos = 0;
 
 if (DEBUG) {
     Serial.println((const char *)_response.buff);
-    Serial.print("rc: ");Serial.print(rc);
-    if (rc > 0) { Serial.print(" s: 0x");Serial.print(s, HEX); }
-    if (rc > 1) { Serial.print(" i: ");Serial.print(i, DEC); }
-    if (rc > 2) { Serial.print(" n: ");Serial.print(n, DEC); }
-    if (rc > 3) { Serial.print(" t: ");Serial.print(t*2, DEC); }
-    if (rc > 4) { Serial.print("C p: ");Serial.print(p, DEC); }
+    Serial.print("rc:");Serial.print(rc);
+    if (rc > 0) { Serial.print(" s:");Serial.print(s, HEX); }
+    if (rc > 1) { Serial.print(" i:");Serial.print(i, DEC); }
+    if (rc > 2) { Serial.print(" n:");Serial.print(n, DEC); }
+    if (rc > 3) { Serial.print(" l:");Serial.print(l, DEC); }
+    if (rc > 4) { Serial.print(" p:");Serial.print(p, DEC); }
     Serial.println();
 }
-            if (rc == 5) {
+            if (rc == 5 && l == _line_no) {
                 _status.state = s;
                 _status.sprays = i;
                 _status.space = n;
-                _status.temp = t;
+                _status.line = l;
                 _status.position = p;
+
+                _line_no = (_line_no + 1) & 0xfff;
             } else {
 if (DEBUG) {
     Serial.print(">> CORRUPTED: _recv: (");Serial.print(rc);Serial.print(") '");
     Serial.print((const char *)_response.buff);
     Serial.println("'");
+    for(;;);
 }
             }
 
