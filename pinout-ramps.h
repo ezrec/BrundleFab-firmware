@@ -28,8 +28,8 @@
 
 #define SD_CS                   53      /* D53 aka SS_PIN */
 
-#define X_STEP                  54      /* A0 */
-#define X_DIR                   55      /* A1 */
+#define X_STEP                  54      /* D53 */
+#define X_DIR                   55      /* D55 */
 #define X_ENABLE                38      /* D38 */
 #define X_STP_MIN               3       /* Endstop (minimum) */
 #define X_STP_MAX               2       /* Endstop (maximum) */
@@ -61,8 +61,8 @@
                                            Z_TURN_STEPS, Z_TURN_MM)
 
 /* We use the RAMPS Y axis for E */
-#define E_STEP                  60 
-#define E_DIR                   61 
+#define E_STEP                  60
+#define E_DIR                   61
 #define E_ENABLE                56
 #define E_STP_MIN               14      /* Endstop (Minimum) */
 #define E_STP_MAX               -1      /* Endstop (Maximim) */
