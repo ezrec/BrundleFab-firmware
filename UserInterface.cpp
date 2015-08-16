@@ -84,7 +84,7 @@ class MenuAxis : public Menu {
             _sel = SEL_INCR;
         }
 
-        /* Manual Move 
+        /* Manual Move
          * Axis: x Incr: nn
          * X: 00000 Y: 0000
          * Z: 00000 E: 0000
@@ -444,7 +444,7 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
     bg = ui->color(UI_COLOR_BACKGROUND);
     fg = ui->color(UI_COLOR_TEXT);
     st = ui->color(UI_COLOR_STATUS);
-  
+
     bool updated;
     const char *message = ui->cnc()->message_get(&updated);
 
@@ -458,7 +458,7 @@ Menu *MenuMain::update(UserInterface *ui, unsigned long now, enum ui_key key)
         _status.enable = false;
         updated = true;
     }
-    
+
     ui->setTextWrap(false);
     if (_status.enable && _status.time <= now) {
         uint16_t c1, c2;
