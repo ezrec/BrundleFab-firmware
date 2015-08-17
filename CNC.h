@@ -142,10 +142,8 @@ class CNC {
 
         void target_get(float *pos)
         {
-            const float *offset = tool()->offset_is();
-
             for (int i = 0; i < AXIS_MAX; i++)
-                pos[i] = _pos[i] + offset[i];
+                pos[i] = _pos[i];
         }
 
         void position_get(float *pos)
