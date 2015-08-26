@@ -76,7 +76,9 @@ if (DEBUG) {
                 line_no = (line_no + 1) & 0xfff;
                 send('n',line_no);
                 while (!recv() && (millis() < timeout));
-            } while (_status.line != line_no);
+                send('?');
+                while (!recv() && (millis() < timeout));
+            } while (_status.line != line_no+1);
 
             _response.waiting = false;
 if (DEBUG) {
@@ -113,6 +115,9 @@ if (DEBUG) {
 
             if (cmd == 'n')
                 _line_no = val;
+
+            if (cmd == 'h' || cmd == 'i' || cmd == 'j')
+                _status.state |= STATUS_MOTOR_ON;
 
             _io->print(cmd);
             _io->println(val, HEX);
@@ -172,7 +177,7 @@ if (DEBUG > 1) {
             _response.buff[_response.pos] = 0;
             int rc;
 
-            if (strncmp(_response.buff, "ok ", 3) == 0) {
+            if (strncmp(_response.buff, "ok", 2) == 0) {
                 _response.waiting = false;
             } else {
 if (DEBUG) {
@@ -182,8 +187,15 @@ if (DEBUG) {
 }
             }
 
-            rc = sscanf(_response.buff, "ok %x %x %x %x %x", &s, &i, &n, &l, &p);
             _response.pos = 0;
+
+            if (_response.cmd != '?') {
+                _line_no = (_line_no + 1) & 0xfff;
+                return true;
+            }
+
+            /* Handle '?' */
+            rc = sscanf(_response.buff, "ok %x %x %x %x %x", &s, &i, &n, &l, &p);
 
 if (DEBUG) {
     Serial.println((const char *)_response.buff);
@@ -224,9 +236,10 @@ if (DEBUG) {
                 return false;
 
 if (DEBUG) {
-    Serial.println(">> WAIITING..");
+    Serial.println(">> WAITING..");
 }
-            while (!recv());
+            while (busy())
+                recv();
 if (DEBUG) {
     Serial.println(">> .. DONE");
 }

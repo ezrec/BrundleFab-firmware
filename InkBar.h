@@ -150,8 +150,10 @@ if (DEBUG && in_state != _state) {
     Serial.println();
 }
 
-            if (!_ink.busy() && (us_now > _next_status)) {
-                _ink.send('?');
+            if (_ink.motor_on()) {
+                if (!_ink.busy() && (us_now > _next_status)) {
+                    _ink.send('?');
+                }
             }
 
             return motor_active();
@@ -198,9 +200,12 @@ if (DEBUG) Serial.print("target_set: Repeat ");
 if (DEBUG) Serial.println(pos - _dotline);
                 while (_ink.busy())
                     _ink.recv();
-                _ink.cmd('l',_pattern);
-                if ((pos - _dotline) > 1)
-                    _ink.cmd('r', (pos - _dotline) - 1);
+                if ((pos - _dotline) > 1) {
+                    _ink.cmd('l',_pattern);
+                    _ink.send('r', (pos - _dotline) - 1);
+                } else {
+                    _ink.send('l',_pattern);
+                }
                 _dotline = pos;
             }
 
