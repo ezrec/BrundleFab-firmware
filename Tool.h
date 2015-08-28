@@ -59,6 +59,11 @@ class Tool {
             return _active;
         }
 
+        virtual float kelvin(void)
+        {
+            return 0;
+        }
+
         virtual bool update(unsigned long us_now)
         {
             return _active;

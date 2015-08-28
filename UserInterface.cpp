@@ -40,6 +40,7 @@ static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
     uint16_t bg, fg, st;
     float pos[AXIS_MAX];
     CNC *cnc = ui->cnc();
+    float temp_k = ui->cnc()->tool()->kelvin();
 
     bg = ui->color(UI_COLOR_BACKGROUND);
     fg = ui->color(UI_COLOR_TEXT);
@@ -50,7 +51,12 @@ static void axis_report(UserInterface *ui, int col, int row, int sel_axis = -1)
     ui->setTextColor(tool ? st : fg, bg);
     ui->print("T");
     ui->print(tool);
-    ui->print("  ");
+    if (temp_k > 0) {
+        ui->print("  ");
+        ui->print(temp_k - 273.16);
+        ui->print("C");
+    }
+    ui->print("        ");
 
     cnc->position_get(pos);
 

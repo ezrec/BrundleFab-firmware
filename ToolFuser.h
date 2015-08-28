@@ -62,6 +62,7 @@ class ToolFuser : public Tool {
         short _limit_min;
         short _limit_max;
         short _precision;
+        short _temp;
         bool _ready;
 
     public:
@@ -121,32 +122,36 @@ class ToolFuser : public Tool {
             return _ready;
         }
 
+        virtual float kelvin()
+        {
+            return (float)_temp + 273.16;
+        }
+
         virtual bool update(unsigned long us_now)
         {
             /* Overheat protection */
             short adc = analogRead(_temp_pin);
-            short temp = 0;
 
             for (int i = 1; i < NUMTEMPS; i++) {
                 if (temptable[i-1].adc <= adc &&
                     temptable[i].adc > adc) {
-                    temp = map(adc, temptable[i-1].adc,
-                                    temptable[i].adc,
-                                    temptable[i-1].celsius,
-                                    temptable[i].celsius);
+                    _temp = map(adc, temptable[i-1].adc,
+                                     temptable[i].adc,
+                                     temptable[i-1].celsius,
+                                     temptable[i].celsius);
                     break;
                 }
             }
 
-            if (temp > _limit_max) {
+            if (_temp > _limit_max) {
                 digitalWrite(_enable_pin, LOW);
                 _ready = false;
-            } else if (temp < _limit_min) {
+            } else if (_temp < _limit_min) {
                 digitalWrite(_enable_pin, HIGH);
             }
 
-            if ((_limit_min - _precision) <= temp &&
-                temp <= (_limit_max + _precision)) {
+            if ((_limit_min - _precision) <= _temp &&
+                _temp <= (_limit_max + _precision)) {
                 _ready = true;
             } else {
                 _ready = false;
@@ -154,10 +159,10 @@ class ToolFuser : public Tool {
 
 if (DEBUG) {
     Serial.print(adc);Serial.print("A: ");
-    Serial.print(temp);Serial.print("C, (");
+    Serial.print(_temp);Serial.print("C, (");
     Serial.print(_limit_min);Serial.print("-");
     Serial.print(_limit_max);Serial.print(") ");
-    Serial.print(temp*9/5+32);Serial.print("F");
+    Serial.print(_temp*9/5+32);Serial.print("F");
     if (_ready) Serial.print("R");
     Serial.print("\r");
 }

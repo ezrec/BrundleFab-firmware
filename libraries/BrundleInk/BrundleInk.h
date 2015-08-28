@@ -43,6 +43,7 @@ class BrundleInk {
             uint16_t space;
             uint16_t line;
             uint16_t position;
+            float kelvin;
         } _status;
 
         struct {
@@ -90,6 +91,11 @@ if (DEBUG) {
         bool motor_on()
         {
             return _status.state & STATUS_MOTOR_ON;
+        }
+
+        float kelvin()
+        {
+            return _status.kelvin;
         }
 
         // Command protocol
@@ -173,7 +179,7 @@ if (DEBUG > 1) {
                 return false;
             }
 
-            unsigned s, i, n, l, p;
+            unsigned s, i, n, l, p, k;
             _response.buff[_response.pos] = 0;
             int rc;
 
@@ -195,7 +201,7 @@ if (DEBUG) {
             }
 
             /* Handle '?' */
-            rc = sscanf(_response.buff, "ok %x %x %x %x %x", &s, &i, &n, &l, &p);
+            rc = sscanf(_response.buff, "ok %x %x %x %x %x %x", &s, &i, &n, &l, &p, &k);
 
 if (DEBUG) {
     Serial.println((const char *)_response.buff);
@@ -205,14 +211,16 @@ if (DEBUG) {
     if (rc > 2) { Serial.print(" n:");Serial.print(n, DEC); }
     if (rc > 3) { Serial.print(" l:");Serial.print(l, DEC); }
     if (rc > 4) { Serial.print(" p:");Serial.print(p, DEC); }
+    if (rc > 5) { Serial.print(" k:");Serial.print(k, DEC); }
     Serial.println();
 }
-            if (rc == 5 && l == _line_no) {
+            if (rc == 6 && l == _line_no) {
                 _status.state = s;
                 _status.sprays = i;
                 _status.space = n;
                 _status.line = l;
                 _status.position = p;
+                _status.kelvin = k * 0.1;
 
                 _line_no = (_line_no + 1) & 0xfff;
             } else {

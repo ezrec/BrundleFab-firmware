@@ -98,7 +98,12 @@ if (DEBUG) {
             }
         }
 
-       virtual bool update(unsigned long us_now)
+        virtual float kelvin()
+        {
+            return _ink.kelvin();
+        }
+
+        virtual bool update(unsigned long us_now)
         {
             enum inkbar_state in_state = _state;
             bool motor_timeout = us_now > _next_motor;
