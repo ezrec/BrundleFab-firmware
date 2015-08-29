@@ -36,7 +36,6 @@
 #include "Visualize.h"
 #endif
 
-#include "Axis_DCEncoder.h"
 #include "Axis_AF1Stepper.h"
 #include "Axis_AF2Stepper.h"
 #include "Axis_A4988.h"
