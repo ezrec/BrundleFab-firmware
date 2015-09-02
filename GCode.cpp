@@ -353,6 +353,18 @@ bool GCode::_line_parse(struct gcode_line *line, struct gcode_block *blk)
     return true;
 }
 
+static void tool_parms(Tool *tool, const struct gcode_block *blk)
+{
+        if (blk->update_mask & GCODE_UPDATE_P)
+            tool->parm_set(Tool::PARM_P, blk->p);
+        if (blk->update_mask & GCODE_UPDATE_Q)
+            tool->parm_set(Tool::PARM_Q, blk->q);
+        if (blk->update_mask & GCODE_UPDATE_R)
+            tool->parm_set(Tool::PARM_R, blk->r);
+        if (blk->update_mask & GCODE_UPDATE_S)
+            tool->parm_set(Tool::PARM_S, blk->s);
+}
+
 void GCode::_block_do(struct gcode_block *blk)
 {
     Stream *out = blk->io->out;
@@ -375,14 +387,7 @@ void GCode::_block_do(struct gcode_block *blk)
             th->select(blk->cmd);
         }
 
-        if (blk->update_mask & GCODE_UPDATE_P)
-            th->tool()->parm_set(Tool::PARM_P, blk->p);
-        if (blk->update_mask & GCODE_UPDATE_Q)
-            th->tool()->parm_set(Tool::PARM_Q, blk->q);
-        if (blk->update_mask & GCODE_UPDATE_R)
-            th->tool()->parm_set(Tool::PARM_R, blk->r);
-        if (blk->update_mask & GCODE_UPDATE_S)
-            th->tool()->parm_set(Tool::PARM_S, blk->s);
+        tool_parms(th->tool(), blk);
 
         if (tool_change)
             th->tool()->start();
@@ -477,6 +482,8 @@ void GCode::_block_do(struct gcode_block *blk)
                                     pos[i] = blk->axis[i];
                                 _cnc->tool_offset_set((int)blk->p, pos, blk->update_mask);
                             }
+
+                            tool_parms(_cnc->tool((int)blk->p), blk);
                         }
                         break;
                     default:

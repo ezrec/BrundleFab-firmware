@@ -70,6 +70,7 @@ The following GCode commands are supported:
 | G0 Xn Yn Zn En        | Uncontrolled move                                  |
 | G1 Xn Yn Zn En Fn     | Controlled move                                    |
 | G10 L1 Pt Xn Yn Zn En | Set tool table entry (tool offset)                 |
+| G10 L1 Pt Rn Sn       | Set tool table entry (tool standby and op. temp)   |
 | G20                   | Set units to inches                                |
 | G21                   | Set units to mm                                    |
 | G28 Xn Yn Zn En       | Home selected axes                                 |
