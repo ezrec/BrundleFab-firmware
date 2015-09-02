@@ -59,6 +59,11 @@ class Tool {
             return _active;
         }
 
+        float celsius(void)
+        {
+            return kelvin() - 273.15;
+        }
+
         virtual float kelvin(void)
         {
             return 0;

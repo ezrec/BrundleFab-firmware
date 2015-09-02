@@ -91,6 +91,7 @@ The following GCode commands are supported:
 | M30 filename          | Delete file from SD                                |
 | M32 filename          | Select SD and and printf                           |
 | M36 filename          | Return file information                            |
+| M105                  | Return tool and bed temperature                    |
 | M111 Sn               | Set debug flags                                    |
 | M114                  | Get current position                               |
 | M115                  | Get firmware version                               |

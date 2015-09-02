@@ -608,6 +608,11 @@ void GCode::_block_do(struct gcode_block *blk)
             }
             break;
 #endif /* ENABLE_SD */
+        case 105: /* M105 - Report Bed and Tool temperature */
+            out->print(" T:");
+            out->print(_cnc->tool(1)->celsius());
+            out->print(" B:-273");
+            break;
         case 111: /* M111 - Set debug */
             if (blk->update_mask & GCODE_UPDATE_S) {
                 int s = (int)blk->s;
