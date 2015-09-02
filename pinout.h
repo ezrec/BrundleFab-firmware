@@ -31,6 +31,7 @@
 #define TOOL_INK_BLACK          1
 #define TOOL_FUSER              20
 #define TOOL_RECOAT             21
+#define TOOL_BED_TEMP           22
 
 #endif /* PINOUT_H */
 /* vim: set shiftwidth=4 expandtab:  */

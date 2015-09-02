@@ -75,6 +75,7 @@ Tool toolFuser;
 #endif
 
 Tool toolRecoat;
+Tool toolBedTemp;
 
 ToolHead tools;
 CNC cnc = CNC(&axisX, &axisY, &axisZ, &axisE, &tools);
@@ -108,6 +109,7 @@ void setup()
 #endif
     tools.attach(TOOL_FUSER, &toolFuser);
     tools.attach(TOOL_RECOAT, &toolRecoat);
+    tools.attach(TOOL_BED_TEMP, &toolBedTemp);
     toolFuser.begin();
     tools.begin();
 

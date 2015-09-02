@@ -58,6 +58,7 @@ Here's some terrible ASCII Art explaining the layer head:
 * Tools 1..16 are the ink sprayers
 * Tool 20 is the fuser (heat lamp)
 * Tool 21 is the recoating blade/roller
+* Tool 22 is the bed thermal sensor
 
 ## GCode
 
