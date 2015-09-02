@@ -18,6 +18,8 @@
 #ifndef INKBAR_H
 #define INKBAR_H
 
+#include "timecmp.h"
+
 /* It's a Tool! It's an Axis! It's a sealing wax! */
 #include "Tool.h"
 #include "Axis.h"
@@ -106,7 +108,7 @@ if (DEBUG) {
         virtual bool update(unsigned long us_now)
         {
             enum inkbar_state in_state = _state;
-            bool motor_timeout = us_now > _next_motor;
+            bool motor_timeout = time_after(us_now, _next_motor);
 
             if (_ink.busy()) {
                 if (!_ink.recv())
@@ -157,10 +159,8 @@ if (DEBUG && in_state != _state) {
     Serial.println();
 }
 
-            if (_ink.motor_on()) {
-                if (!_ink.busy() && (us_now > _next_status)) {
-                    _ink.send('?');
-                }
+            if (!_ink.busy() && time_after(us_now, _next_status)) {
+                _ink.send('?');
             }
 
             return motor_active();
